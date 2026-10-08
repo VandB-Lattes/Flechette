@@ -381,7 +381,7 @@ function vReglages() {
     <form id="assetForm" class="grid2"><div class="field"><label for="aFile">Fichier</label><input id="aFile" type="file" accept="image/*,video/mp4,video/webm,font/woff2,application/pdf" required></div>
     <div class="field"><label for="aName">Enregistrer sous</label><select id="aName"><option value="logo">Logo du bar (Flechettes/Images/logo.png, affiché en tête des pages)</option><option value="annonce-victoire.mp4">Vidéo TV : victoire (poule, 1er tour)</option><option value="annonce-qualifies.mp4">Vidéo TV : qualifiés (tableau final)</option><option value="annonce-finale.mp4">Vidéo TV : grande finale</option><option value="">Nom d’origine du fichier</option></select></div>
     <div class="row"><button class="btn" type="submit">Envoyer</button></div></form>
-    <p class="muted small">Annonces de l’écran TV : déposez les trois vidéos Flow avec le bon choix dans « Enregistrer sous » (MP4, 16:9). Sans vidéo, une animation aux couleurs V and B s’affiche à la place. <a href="suivi.html?demo=annonces" target="_blank" rel="noopener">Voir un aperçu des trois annonces</a></p>
+    <p class="muted small">Annonces de l’écran TV : déposez les trois vidéos Flow avec le bon choix dans « Enregistrer sous » (MP4, 16:9). Sans vidéo, seul le texte s’affiche, sur fond noir. <a href="suivi.html?demo=annonces" target="_blank" rel="noopener">Voir un aperçu des trois annonces</a></p>
     <div id="assetList"><div class="empty">Chargement…</div></div></section>`;
 }
 async function loadAccounts() {

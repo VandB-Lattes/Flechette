@@ -1,7 +1,7 @@
 // Service worker : l'application s'installe, les pages s'ouvrent même avec un Wi-Fi faible,
 // et les notifications (place libérée, match lancé) s'affichent même quand la page est fermée.
 // Les données (Supabase) passent toujours par le réseau.
-const CACHE = 'vb-flechettes-v20';
+const CACHE = 'vb-flechettes-v21';
 const ASSETS = ['./', 'index.html', 'staff.html', 'bar.html', 'gerer.html', 'comptoir.html', 'suivi.html', 'test.html', 'style.css', 'config.js', 'icon.svg', 'icon-192.png', 'manifest.webmanifest',
   'js/public.js', 'js/staff.js', 'js/engine.js', 'js/util.js', 'js/sb.js', 'js/views.js', 'js/games.js', 'js/art.js', 'js/assets.js', 'js/push.js', 'js/guide.js', 'js/tvbracket.js', 'js/pwtoggle.js', 'js/annonces.js', 'acces-staff.html'];
 
