@@ -2,7 +2,8 @@
 // Utilise l'API de gestion Supabase avec le jeton SUPABASE_ACCESS_TOKEN (secret GitHub) :
 //   1. autorise les connexions anonymes (appareils du staff) et coupe les e-mails d'authentification ;
 //   2. applique les fichiers de supabase/migrations qui ne l'ont pas encore été ;
-//   3. écrit la clé publique « anon » dans web/config.js pour la publication du site.
+//   3. met à jour les identifiants du staff listés dans le secret ACCES_STAFF (voir ACCES_STAFF.md) ;
+//   4. écrit la clé publique « anon » dans web/config.js pour la publication du site.
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -55,7 +56,31 @@ for (const f of files) {
   console.log(`✓ ${name} appliquée`);
 }
 
-// 3. Clé publique pour le site
+// 3. Identifiants du staff (secret GitHub ACCES_STAFF, une ligne « identifiant : mot de passe » par personne)
+const ACCES = process.env.ACCES_STAFF || '';
+if (ACCES.trim()) {
+  const rows = [];
+  for (const [i, raw] of ACCES.split(/\r?\n/).entries()) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const k = line.indexOf(':');
+    const login = (k < 0 ? '' : line.slice(0, k)).trim().toLowerCase(), pw = k < 0 ? '' : line.slice(k + 1).trim();
+    if (!/^[a-z0-9._-]{3,30}$/.test(login)) throw new Error(`ACCES_STAFF, ligne ${i + 1} : identifiant invalide (3 à 30 caractères : lettres sans accent, chiffres, point, tiret).`);
+    if (pw.length < 6) throw new Error(`ACCES_STAFF, ligne ${i + 1} : mot de passe trop court pour « ${login} » (6 caractères minimum).`);
+    rows.push([login, pw]);
+  }
+  if (!rows.length) throw new Error('ACCES_STAFF ne contient aucun identifiant.');
+  const q = (x) => `'${x.replace(/'/g, "''")}'`;
+  const values = rows.map(([l, p]) => `(${q(l)}, ${q(p)})`).join(', ');
+  await sql(`with src(login, pw) as (values ${values})
+    insert into public.staff_accounts (login, password_hash)
+      select login, extensions.crypt(pw, extensions.gen_salt('bf')) from src
+    on conflict (login) do update set password_hash = excluded.password_hash;
+    delete from public.staff_accounts where login not in (${rows.map(([l]) => q(l)).join(', ')});`);
+  console.log(`✓ Accès staff : ${rows.length} identifiant(s) à jour (${rows.map(([l]) => l).join(', ')}). Les autres identifiants sont supprimés.`);
+} else console.log('· Pas de secret ACCES_STAFF : les identifiants se gèrent dans l’espace staff (Réglages › Accès staff).');
+
+// 4. Clé publique pour le site
 const keys = await api('GET', '/api-keys');
 const anon = Array.isArray(keys.data) ? keys.data.find((k) => k.name === 'anon' && k.api_key) : null;
 if (!anon) throw new Error(`Clé anon introuvable (${keys.status}).`);

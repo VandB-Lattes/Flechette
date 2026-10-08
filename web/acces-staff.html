@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Accès staff · Fléchettes V and B Lattes</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#1d1d1b">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700;900&family=Nunito+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css?v=14">
+</head>
+<body>
+<!-- Gestion des accès au staff : créer le premier identifiant, puis ajouter, modifier ou supprimer les identifiants. -->
+<div class="wrap" style="max-width:640px">
+  <header class="top">
+    <h1 class="brand"><img class="logo" data-asset="logo" alt="V and B Montpellier Lattes" onerror="this.remove()"><span>Fléchettes</span></h1>
+    <div class="tagline">Accès staff <b>·</b> identifiants</div>
+  </header>
+  <main id="main" class="stack"><div class="empty">Chargement…</div></main>
+  <p class="legal">Concours réservé aux majeurs. L’abus d’alcool est dangereux pour la santé, à consommer avec modération.</p>
+</div>
+<script type="module" src="js/assets.js"></script>
+<script type="module">
+import { sb } from './js/sb.js';
+import { $, esc, toast } from './js/util.js';
+
+const main = $('#main');
+const clean = (m) => String(m || '').replace(/^.*?: /, '');
+const device = () => /iPad|Tablet|Android(?!.*Mobile)/i.test(navigator.userAgent) ? 'Tablette' : /Mobi|iPhone|Android/i.test(navigator.userAgent) ? 'Téléphone' : 'Ordinateur';
+let me = null, editing = null;
+
+async function session() {
+  let { data: { session: s } } = await sb.auth.getSession();
+  if (!s) { const r = await sb.auth.signInAnonymously(); if (r.error) throw new Error('Connexion impossible : ' + r.error.message); s = r.data?.session || (await sb.auth.getSession()).data.session; }
+  return s;
+}
+
+async function load() {
+  const { data: first, error } = await sb.rpc('staff_setup_needed');
+  if (error) {
+    main.innerHTML = `<section class="panel"><h2>Base pas encore à jour</h2><div class="notice bad">${esc(clean(error.message))}</div>
+      <p>La gestion des identifiants arrive avec la dernière mise à jour. Vérifiez sur GitHub que le déploiement (<b>Actions › Déployer</b>) est terminé et vert, puis rechargez cette page.</p></section>`;
+    return;
+  }
+  const { data: { session: s } } = await sb.auth.getSession();
+  me = s ? (await sb.rpc('staff_hello')).data : null;
+  if (me) return manage();
+  form(first);
+}
+
+/* Premier accès ou connexion */
+function form(first) {
+  main.innerHTML = `<form class="panel" id="f" style="max-width:480px"><h2>${first ? 'Créer le premier accès staff' : 'Gérer les accès staff'}</h2>
+    <p class="muted">${first ? 'Aucun identifiant n’existe encore. Choisissez l’identifiant et le mot de passe qui ouvriront l’espace staff.' : 'Connectez-vous avec un identifiant staff existant pour ajouter, modifier ou supprimer des accès.'}</p>
+    <div class="field"><label for="lg">Identifiant</label><input id="lg" required autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="30" placeholder="ex. staff.lattes"></div>
+    <div class="field"><label for="pw">Mot de passe</label><input id="pw" type="password" required autocomplete="${first ? 'new-password' : 'current-password'}"></div>
+    ${first ? '<div class="field"><label for="pw2">Mot de passe (à nouveau)</label><input id="pw2" type="password" required autocomplete="new-password"></div><p class="muted small">Identifiant : 3 à 30 caractères (lettres sans accent, chiffres, point, tiret). Mot de passe : 6 caractères minimum.</p>' : ''}
+    <div class="err" id="err" role="alert"></div><button class="btn red xl" type="submit">${first ? 'Créer l’accès' : 'Se connecter'}</button></form>`;
+  $('#f').onsubmit = async (e) => {
+    e.preventDefault(); const btn = e.target.querySelector('button'); $('#err').textContent = '';
+    const lg = $('#lg').value.trim(), pw = $('#pw').value;
+    if (first && pw !== $('#pw2').value) { $('#err').textContent = 'Les deux mots de passe ne sont pas identiques.'; return; }
+    btn.disabled = true;
+    try {
+      await session();
+      if (first) { const { error } = await sb.rpc('create_staff_account', { p_login: lg, p_password: pw }); if (error) throw new Error(clean(error.message)); }
+      const { error } = await sb.rpc('staff_login', { p_login: lg, p_password: pw, p_device: device() });
+      if (error) throw new Error(clean(error.message));
+      toast(first ? 'Accès créé' : 'Connecté'); load();
+    } catch (x) { $('#err').textContent = x.message; btn.disabled = false; }
+  };
+}
+
+/* Liste et gestion des identifiants */
+async function manage() {
+  const { data, error } = await sb.rpc('list_staff_accounts');
+  if (error) { main.innerHTML = `<div class="notice bad">${esc(clean(error.message))}</div>`; return; }
+  const when = (d) => d ? new Date(d).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'jamais';
+  const staffUrl = new URL('staff.html', location.href).href;
+  main.innerHTML = `<section class="panel"><div class="row" style="justify-content:space-between"><h2>Identifiants staff</h2><span class="muted small">Connecté : <b>${esc(me.login)}</b></span></div>
+    <ul class="tlist">${data.map((a) => `<li><span class="who"><b>${esc(a.login)}</b>${a.login === me.login ? ' <span class="pill ok">vous</span>' : ''}<br><span class="muted small">créé le ${when(a.created_at)} · dernière connexion ${when(a.last_login)} · ${a.devices} appareil(s) connecté(s)</span></span>
+      ${editing === 'pw:' + a.id ? `<span class="row"><input type="password" id="np" placeholder="Nouveau mot de passe" autocomplete="new-password" style="max-width:190px"><button class="btn sm" data-act="setPw" data-id="${a.id}">Valider</button><button class="x" data-act="cancel">Annuler</button></span>`
+        : editing === 'del:' + a.id ? `<span class="row"><button class="btn red sm" data-act="del" data-id="${a.id}">Confirmer la suppression</button><button class="x" data-act="cancel">Garder</button></span>`
+        : `<span class="row"><button class="x" data-act="ask" data-k="pw:${a.id}">Changer le mot de passe</button>${data.length > 1 ? `<button class="x" data-act="ask" data-k="del:${a.id}">Supprimer</button>` : ''}</span>`}</li>`).join('')}</ul></section>
+    <form class="panel" id="add"><h3>Ajouter un identifiant</h3><p class="muted small">Un identifiant commun à tout le staff suffit ; vous pouvez aussi en créer un par personne.</p>
+      <div class="grid2"><div class="field"><label for="nl">Identifiant</label><input id="nl" required autocapitalize="none" spellcheck="false" maxlength="30" placeholder="ex. julie"></div>
+      <div class="field"><label for="npw">Mot de passe</label><input id="npw" type="password" required autocomplete="new-password"></div></div>
+      <button class="btn" type="submit">Ajouter</button></form>
+    <section class="panel"><h3>Ouvrir l’espace staff</h3><p class="small">Sur chaque appareil : <span class="linkLine">${esc(staffUrl)}</span> puis identifiant et mot de passe. L’appareil reste connecté.</p>
+      <div class="row"><a class="btn red" href="staff.html">Aller à l’espace staff</a><button class="btn ghost" data-act="logout">Se déconnecter de cet appareil</button></div>
+      <p class="muted small">Supprimer un identifiant déconnecte aussitôt les appareils qui l’utilisent. Le dernier identifiant ne peut pas être supprimé.</p></section>`;
+  $('#add').onsubmit = async (e) => {
+    e.preventDefault();
+    const { error } = await sb.rpc('create_staff_account', { p_login: $('#nl').value.trim(), p_password: $('#npw').value });
+    if (error) return toast(clean(error.message));
+    toast('Identifiant ajouté'); manage();
+  };
+}
+
+main.addEventListener('click', async (e) => {
+  const t = e.target.closest('[data-act]'); if (!t) return; e.preventDefault();
+  const act = t.dataset.act;
+  if (act === 'ask') { editing = t.dataset.k; return manage(); }
+  if (act === 'cancel') { editing = null; return manage(); }
+  if (act === 'setPw') {
+    const { error } = await sb.rpc('set_staff_password', { p_account: t.dataset.id, p_password: $('#np')?.value || '' });
+    if (error) return toast(clean(error.message));
+    editing = null; toast('Mot de passe changé'); return manage();
+  }
+  if (act === 'del') {
+    const { error } = await sb.rpc('delete_staff_account', { p_account: t.dataset.id });
+    if (error) return toast(clean(error.message));
+    editing = null;
+    if (t.dataset.id === me.account_id) { await sb.auth.signOut(); toast('Identifiant supprimé'); return load(); }
+    toast('Identifiant supprimé'); return manage();
+  }
+  if (act === 'logout') { await sb.rpc('staff_logout'); await sb.auth.signOut(); toast('Déconnecté'); return load(); }
+});
+
+load().catch((e) => { main.innerHTML = `<div class="notice bad">${esc(e.message || e)}</div>`; });
+</script>
+</body>
+</html>

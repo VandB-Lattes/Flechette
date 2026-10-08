@@ -49,7 +49,8 @@ async function loginView() {
     <div class="field"><label for="lgLogin">Identifiant</label><input id="lgLogin" required autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="30" placeholder="ex. staff.lattes"></div>
     <div class="field"><label for="lgPass">Mot de passe</label><input id="lgPass" type="password" required autocomplete="${first ? 'new-password' : 'current-password'}"${first ? ' minlength="6"' : ''}></div>
     ${first ? '<div class="field"><label for="lgPass2">Mot de passe (à nouveau)</label><input id="lgPass2" type="password" required autocomplete="new-password"></div><p class="muted small">Identifiant : lettres sans accent, chiffres, point ou tiret (3 à 30). Mot de passe : 6 caractères minimum.</p>' : ''}
-    <div class="err" id="lgErr" role="alert"></div><button class="btn red xl" type="submit">${first ? 'Créer et se connecter' : 'Se connecter'}</button></form>`;
+    <div class="err" id="lgErr" role="alert"></div><button class="btn red xl" type="submit">${first ? 'Créer et se connecter' : 'Se connecter'}</button>
+    <p class="muted small" style="margin:0"><a href="acces-staff.html">Gérer les identifiants staff</a></p></form>`;
   $('#loginForm').onsubmit = async (e) => {
     e.preventDefault(); const btn = e.target.querySelector('button'), err = $('#lgErr'); err.textContent = '';
     const login = $('#lgLogin').value.trim(), pass = $('#lgPass').value;
@@ -367,9 +368,9 @@ function vReglages() {
     <div class="row" style="align-items:flex-start;gap:16px"><div class="qrBox" id="staffQR" style="width:180px"></div><div class="stack" style="flex:1;min-width:200px"><span class="linkLine" id="staffLink">${esc(link)}</span>
     <div class="row"><button type="button" class="btn ghost sm" data-act="copy" data-src="staffLink">Copier le lien</button><button type="button" class="btn ghost sm" data-act="dlStaffQR">Télécharger le QR code</button></div>
     <p class="muted small">Cette adresse n’apparaît nulle part côté joueurs.</p></div></div>` : ''}
-    <h3 style="margin-top:14px">Identifiants staff</h3><div id="accList"><div class="empty">Chargement…</div></div>
+    <h3 style="margin-top:14px">Identifiants staff</h3><p class="muted small">Aussi sur la page <a href="acces-staff.html">acces-staff.html</a>.</p><div id="accList"><div class="empty">Chargement…</div></div>
     <form id="accForm" class="grid2" style="margin-top:8px"><div class="field"><label for="accLogin">Nouvel identifiant</label><input id="accLogin" required autocapitalize="none" spellcheck="false" maxlength="30" placeholder="ex. julie"></div><div class="field"><label for="accPass">Mot de passe</label><input id="accPass" type="password" required minlength="6" autocomplete="new-password"></div><div class="row"><button class="btn sm" type="submit">Ajouter l’identifiant</button></div></form>
-    <p class="muted small">Un identifiant commun pour tout le staff suffit ; vous pouvez aussi en créer un par personne. Supprimer un identifiant déconnecte tous les appareils qui l’utilisent.</p></section>
+    <p class="muted small">Un identifiant commun pour tout le staff suffit ; vous pouvez aussi en créer un par personne. Supprimer un identifiant déconnecte tous les appareils qui l’utilisent. Si la liste est tenue dans GitHub (secret ACCES_STAFF, voir le fichier ACCES_STAFF.md du dépôt), elle est remise à jour à chaque déploiement.</p></section>
     <section class="panel"><h2>Page test téléphone</h2><p class="small">Pour vérifier qu’un téléphone gère tout (connexion, direct, notifications, inscription, Mon match, Mes scores). Scannez avec le téléphone à tester :</p>
     <div class="row" style="align-items:flex-start;gap:16px"><div class="qrBox" id="testQR" style="width:150px"></div><div class="stack" style="flex:1;min-width:180px"><span class="linkLine">${esc(testUrl)}</span><p class="muted small">Créez d’abord le concours de test plus bas pour pouvoir faire le parcours complet.</p></div></div></section></div>`
     + vReglagesBase() + `<section class="panel" style="margin-top:18px"><h2>Concours de test</h2><p class="muted small">Crée un concours d’essai « (test) » avec 12 équipes (10 présentes) pour s’entraîner : tirage, machines, page joueurs (codes d’équipe 1001 à 1012) et écran TV. Il ne compte jamais dans le classement de la saison ; effacez-le après l’essai.</p>

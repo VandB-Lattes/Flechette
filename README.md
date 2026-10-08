@@ -33,7 +33,9 @@ Le dépôt GitHub et GitHub Pages sont déjà en place. Il reste :
 ## Accès du staff : identifiant et mot de passe
 - **Premier identifiant** : juste après le déploiement, ouvrez `…/staff.html`. Tant qu'aucun identifiant n'existe, la page propose « Créer le premier accès staff » : choisissez l'identifiant et le mot de passe. Faites-le tout de suite, car la première personne qui ouvre la page le crée.
 - **Ensuite** : sur chaque appareil, QR code staff (tablette) ou lien (ordinateur), puis identifiant + mot de passe. L'appareil reste connecté jusqu'à « Se déconnecter ».
-- **Gestion** dans **Réglages › Accès staff** : ajouter un identifiant (un commun ou un par personne), changer un mot de passe, supprimer un identifiant (ses appareils sont déconnectés). Le dernier identifiant ne peut pas être supprimé.
+- **Liste des accès dans GitHub** (facultatif) : le fichier `ACCES_STAFF.md` à la racine explique comment tenir la liste « identifiant : mot de passe » dans le secret GitHub `ACCES_STAFF`. Elle est appliquée à chaque déploiement et fait foi.
+- **Page dédiée `acces-staff.html`** (à la racine du site, `…/acces-staff.html`) : créer le premier identifiant, puis, connecté, ajouter, changer un mot de passe ou supprimer des identifiants.
+- **Gestion** aussi dans **Réglages › Accès staff** : ajouter un identifiant (un commun ou un par personne), changer un mot de passe, supprimer un identifiant (ses appareils sont déconnectés). Le dernier identifiant ne peut pas être supprimé.
 - Aucun e-mail : les mots de passe sont stockés chiffrés dans la base. Après 1 essai raté, la connexion attend 1 seconde.
 - Mot de passe oublié : changez-le depuis un appareil encore connecté.
 

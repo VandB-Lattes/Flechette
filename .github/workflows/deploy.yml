@@ -2,6 +2,7 @@
 # fonctions Supabase (report, push, sync-store), puis le site sur GitHub Pages.
 # Rien à exécuter à la main. Un seul secret à créer dans GitHub (Settings › Secrets and variables › Actions) :
 #   SUPABASE_ACCESS_TOKEN : jeton personnel Supabase (supabase.com › Account › Access Tokens)
+#   ACCES_STAFF           : (facultatif) identifiants et mots de passe du staff, voir ACCES_STAFF.md
 name: Déployer
 on:
   push:
@@ -22,6 +23,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      ACCES_STAFF: ${{ secrets.ACCES_STAFF }}
       PROJECT_REF: ifjiysdhxmidiswcsiuq
     steps:
       - uses: actions/checkout@v4
