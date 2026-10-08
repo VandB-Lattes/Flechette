@@ -13,6 +13,7 @@
 </head>
 <body>
 <!-- Écran de suivi pour la télévision du bar : affichage seul, mis à jour en temps réel, sans compte. -->
+<div id="tvqrfix" class="tvqrfix" hidden style="--qrw:clamp(130px,9.5vw,200px)"><div class="qrc"></div><b>Inscrivez-vous sur votre téléphone</b></div>
 <div id="app"><div class="disp"><div class="empty">Chargement…</div></div></div>
 <script type="module">
 const PAGE_CSS = `
@@ -43,6 +44,15 @@ body{margin:0;border-top:0}
 .tvvs{display:flex;flex-direction:column;margin:4px 0;line-height:1.15}.tvvs b{font-size:1.15em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tvvs i{color:var(--orange);font-weight:800;font-size:.8em}
 .tvm small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tvstrip{max-height:25vh}
+.tvqrfix{position:fixed;z-index:40;right:20px;bottom:40px;box-sizing:border-box;height:calc(var(--qrw) + 62px);width:var(--qrw);display:flex;flex-direction:column;align-items:center;gap:6px;background:#fff;border:2px solid #1d1d1b;border-radius:12px;padding:10px;text-align:center}
+.tvqrfix .qrc{width:calc(var(--qrw) - 24px);aspect-ratio:1}.tvqrfix .qrc img,.tvqrfix .qrc canvas{width:100%!important;height:auto!important;display:block}
+.tvqrfix[hidden]{display:none}
+.tvqrfix b{font:800 clamp(12px,.95vw,19px)/1.15 var(--body)}
+.disp.tv{--qrw:clamp(130px,9.5vw,200px)}
+/* le bandeau du bas a la hauteur du QR code : le QR ne recouvre jamais le tableau */
+.disp.tv .tvstrip{height:calc(var(--qrw) + 62px);max-height:none}
+.disp.tv .tvstrip,.disp.tv .dgrid{margin-right:calc(var(--qrw) + 12px)}
+@media (max-width:1000px){.tvqrfix{position:static;margin:12px auto}.disp.tv .tvstrip,.disp.tv .dgrid{margin-right:0}}
 .tvm small,.tvqr small{color:var(--muted)}
 .tvlist h4{margin:0 0 4px;font:800 clamp(12px,.95vw,19px) var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .tvlist div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -102,8 +112,7 @@ function preDraw() {
     ${teams.length ? `<ul class="dteams">${teams.slice(pg * per, pg * per + per).map((t, i) => { const s = teamState(t); return `<li><span class="n num">${pg * per + i + 1}</span><span class="who"><b>${esc(t.team_name)}</b><small>${esc(t.captain_name)}${t.mate_name ? ' &amp; ' + esc(t.mate_name) : ' · solo'}</small></span><span class="dst ${s.k}">${s.l}</span></li>`; }).join('')}</ul>` : '<div class="empty">Aucune équipe inscrite pour l’instant.</div>'}</section>`;
   const col2 = `<section class="panel dcol"><h2>Avant le tirage</h2><div class="facts"><div class="fact"><span>Format</span><b>${c.format === 'poules' ? 'Poules + tableau' : 'Élimination directe'}</b></div><div class="fact"><span>Jeu</span><b>${esc(c.game)}</b></div><div class="fact"><span>Finale</span><b>${esc(c.final_game)}</b></div><div class="fact"><span>Machines</span><b>${N}</b></div></div><p class="muted">Inscription sur votre téléphone ou au comptoir jusqu’à ${hhmm(c.deadline_time).replace(':', 'h')}. Le tableau s’affichera ici au tirage au sort.</p></section>`;
   const best = (g) => records.find((r) => r.game === g);
-  const col3 = `<section class="panel"><h3>Record de la semaine</h3>${['Count-Up', 'Big Bull'].map((g) => `<div class="row" style="justify-content:space-between"><span><b>${g}</b> · ${best(g) ? esc(best(g).player_name) : 'à battre'}</span><span class="clock" style="font-size:30px">${best(g)?.score ?? '–'}</span></div>`).join('')}</section>
-    <section class="panel" style="align-items:center"><div class="qrBox" id="qr" style="width:220px"></div><b>Inscrivez-vous sur votre téléphone</b></section>`;
+  const col3 = `<section class="panel"><h3>Record de la semaine</h3>${['Count-Up', 'Big Bull'].map((g) => `<div class="row" style="justify-content:space-between"><span><b>${g}</b> · ${best(g) ? esc(best(g).player_name) : 'à battre'}</span><span class="clock" style="font-size:30px">${best(g)?.score ?? '–'}</span></div>`).join('')}</section>`;
   return `<div class="dgrid"><div class="stack">${col1}</div><div class="stack">${col2}</div><div class="stack d3">${col3}</div></div>`;
 }
 
@@ -120,7 +129,7 @@ function poolsView() {
 function strip() {
   if (c.status === 'termine') {
     const pd = E.podium(c), cw = E.consoWinner(c);
-    return `<div class="tvstrip"><div class="tvpod">${[0, 1, 2].map((i) => pd[i] ? `<div class="pd pd${i + 1}"><span class="medal m${i + 1}">${i + 1}</span><b>${esc(tname(c, pd[i]))}</b><small>${esc(c.prizes?.podium?.[i] || '')}</small></div>` : '').join('')}${cw ? `<div class="pd"><span class="medal" style="background:var(--teal);color:#fff">C</span><b>${esc(tname(c, cw))}</b><small>Consolante</small></div>` : ''}</div><div class="tvqr"><div class="qrBox" id="qr"></div><small>Résultats sur votre téléphone</small></div></div>`;
+    return `<div class="tvstrip"><div class="tvpod">${[0, 1, 2].map((i) => pd[i] ? `<div class="pd pd${i + 1}"><span class="medal m${i + 1}">${i + 1}</span><b>${esc(tname(c, pd[i]))}</b><small>${esc(c.prizes?.podium?.[i] || '')}</small></div>` : '').join('')}${cw ? `<div class="pd"><span class="medal" style="background:var(--teal);color:#fff">C</span><b>${esc(tname(c, cw))}</b><small>Consolante</small></div>` : ''}</div></div>`;
   }
   const N = E.machines(settings);
   let mach = '';
@@ -130,8 +139,7 @@ function strip() {
   const last = c.matches.filter((m) => m.status === 'done' && !m.bye).sort((a, b) => String(b.played_at).localeCompare(String(a.played_at))).slice(0, 3);
   return `<div class="tvstrip">${mach}
     <div class="tvlist"><h4>À suivre</h4>${nx.length ? nx.map((m) => `<div><b>${esc(tname(c, m.a))}</b> <i>vs</i> <b>${esc(tname(c, m.b))}</b></div>`).join('') : '<div class="muted">–</div>'}</div>
-    <div class="tvlist"><h4>Derniers résultats</h4>${last.length ? last.map((m) => `<div><b>${esc(tname(c, m.winner))}</b> bat ${esc(tname(c, m.loser))}${m.score ? ` <span class="muted">${esc(m.score)}</span>` : ''}</div>`).join('') : '<div class="muted">Pas encore de résultat.</div>'}</div>
-    <div class="tvqr"><div class="qrBox" id="qr"></div><small>Suivez sur votre téléphone</small></div></div>`;
+    <div class="tvlist"><h4>Derniers résultats</h4>${last.length ? last.map((m) => `<div><b>${esc(tname(c, m.winner))}</b> bat ${esc(tname(c, m.loser))}${m.score ? ` <span class="muted">${esc(m.score)}</span>` : ''}</div>`).join('') : '<div class="muted">Pas encore de résultat.</div>'}</div></div>`;
 }
 
 function computeViews() {
@@ -143,6 +151,19 @@ function computeViews() {
   return v;
 }
 
+/* QR code fixe en bas à droite de l'écran, dessiné une fois par concours (il ne clignote pas aux mises à jour) */
+let qrFor = null;
+function drawQR() {
+  const box = document.getElementById('tvqrfix');
+  if (!c) { box.hidden = true; return; }
+  box.hidden = false;
+  box.querySelector('b').textContent = c.status === 'termine' ? 'Résultats sur votre téléphone' : c.status === 'en_cours' ? 'Suivez sur votre téléphone' : 'Inscrivez-vous sur votre téléphone';
+  if (qrFor === c.id) return;
+  if (typeof QRCode === 'undefined') { setTimeout(drawQR, 400); return; }
+  const el = box.querySelector('.qrc'); el.innerHTML = '';
+  new QRCode(el, { text: `${SITE_URL}/?c=${c.id}`, width: 512, height: 512, correctLevel: QRCode.CorrectLevel.M });
+  qrFor = c.id;
+}
 function render() {
   if (announcer?.busy) return;   // pas de rafraîchissement du tableau pendant une annonce : la vidéo reste fluide
   if (!c) { app.innerHTML = '<div class="disp"><div class="empty">Aucun concours à l’affiche.</div></div>'; return; }
@@ -157,7 +178,7 @@ function render() {
     body = `<div class="tvmain"><div class="tvviewhead"><h2>${esc(label)}</h2>${dots}</div>${k === 'pools' ? poolsView() : mirrorBracket(c, k)}</div>${strip()}`;
   }
   app.innerHTML = `<div class="disp tv">${header(c, title)}${body}<p class="legal" style="margin:0">Concours réservé aux majeurs. L’abus d’alcool est dangereux pour la santé, à consommer avec modération.</p></div>`;
-  const qr = $('#qr'); if (qr && typeof QRCode !== 'undefined') new QRCode(qr, { text: `${SITE_URL}/?c=${c.id}`, width: 512, height: 512 });
+  drawQR();
   document.querySelectorAll('[data-asset="logo"]').forEach((img) => { if (!img.src) img.src = `${ASSETS_URL}/${LOGO_PATH}`; });
 }
 

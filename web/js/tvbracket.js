@@ -73,7 +73,7 @@ export function mirrorBracket(c, ph) {
 
 export const TV_CSS = `
 .mirror{flex:1;min-height:0;overflow:hidden;display:flex;align-items:stretch;gap:0;--cw:clamp(160px,14vw,300px);--gap:20px;--fs:clamp(15px,1.55vw,34px)}
-.mirror.rows-4{--fs:clamp(14px,1.25vw,26px)}.mirror.rows-8{--fs:clamp(10px,.8vw,16px)}.mirror.rows-16{--fs:clamp(9px,.62vw,13px)}
+.mirror.rows-4{--fs:clamp(14px,1.25vw,26px)}.mirror.rows-8{--fs:clamp(9px,.7vw,14px)}.mirror.rows-16{--fs:clamp(9px,.62vw,13px)}
 .bside{flex:1;display:flex;min-width:0}
 .bcolumn,.bcenter{display:flex;flex-direction:column;flex:1;min-width:0;max-width:var(--cw)}
 .bcenter{flex:1.25;max-width:calc(var(--cw) * 1.35)}
