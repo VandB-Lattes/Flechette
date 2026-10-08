@@ -18,8 +18,13 @@ alter table public.staff_devices add column account_id uuid references public.st
 -- Les appareils ouverts sans mot de passe (version précédente) doivent maintenant se connecter
 update public.staff_devices set revoked_at = now() where account_id is null and revoked_at is null;
 
--- L'ouverture directe sans mot de passe est supprimée
+-- Anciennes façons d'ouvrir l'espace staff (lien avec clé, ouverture directe) : supprimées,
+-- quelle que soit la version installée auparavant
 drop function if exists public.join_staff(text);
+drop function if exists public.join_staff(text, text);
+drop function if exists public.create_staff_invite();
+drop function if exists public.revoke_staff_device(uuid);
+drop table if exists public.staff_invites;
 
 -- Faut-il créer le premier identifiant ?
 create or replace function public.staff_setup_needed() returns boolean
