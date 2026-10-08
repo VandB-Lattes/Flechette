@@ -30,7 +30,7 @@ export const ANN_CSS = `
 .ann{position:fixed;inset:0;z-index:50;background:#1d1d1b;color:#fff;overflow:hidden;display:grid;opacity:0;transition:opacity .5s}
 .ann.on{opacity:1}
 .ann video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.ann .txt{position:relative;z-index:2;align-self:center;margin:0 5vw;padding:2.2vh 2.4vw;max-width:62vw;background:rgba(29,29,27,.78);border-radius:14px;animation:annIn .6s ease-out .3s both}
+.ann .txt{position:relative;z-index:2;align-self:center;margin:0 5vw;padding:2.2vh 2.4vw;max-width:62vw;background:rgba(29,29,27,.78);border-radius:14px}
 .ann.qualifies .txt{max-width:none;text-align:center;justify-self:center}
 .ann.finale .txt{max-width:none;text-align:center;justify-self:center;align-self:start;padding-top:9vh}
 .ann .tt{font:900 clamp(40px,8vw,150px)/1 var(--display);letter-spacing:.01em;color:#fbba00;margin:0 0 .25em}
@@ -71,6 +71,8 @@ export function createAnnouncer(logoUrl, onIdle, diag = false) {
       } catch { /* réseau indisponible : on garde la version déjà en mémoire */ }
     }
   }
+  let screenHz = 60;
+  { let n = 0, t0 = 0; const tick = (t) => { if (!t0) t0 = t; if (++n < 60) requestAnimationFrame(tick); else screenHz = 59000 / (t - t0); }; requestAnimationFrame(tick); }
   const loaded = preload(); setInterval(() => { if (!busy) preload(); }, 30 * 60000);
   const app = () => document.getElementById('app');
 
@@ -84,8 +86,10 @@ export function createAnnouncer(logoUrl, onIdle, diag = false) {
     if (v) { v.pause(); v.currentTime = 0; el.prepend(v); }
     document.body.appendChild(el);
     requestAnimationFrame(() => el.classList.add('on'));
-    // le tableau derrière est masqué pendant l'annonce : la TV ne dessine que la vidéo et le texte
-    setTimeout(() => { if (app()) app().style.visibility = 'hidden'; }, 550);
+    // 1) fondu au noir, 2) tableau masqué, 3) seulement ensuite la vidéo démarre : rien d'autre ne bouge pendant la lecture
+    await new Promise((ok) => setTimeout(ok, 550));
+    if (app()) app().style.visibility = 'hidden';
+    await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
     let len = DURATION[a.kind];
     if (v) {
       try {
@@ -97,7 +101,8 @@ export function createAnnouncer(logoUrl, onIdle, diag = false) {
       if (diag) {
         const q = v.getVideoPlaybackQuality?.();
         const d = document.createElement('div'); d.className = 'diag';
-        d.textContent = `${a.kind} · ${v.videoWidth}×${v.videoHeight} · ${(info[a.kind].size / 1048576).toFixed(1)} Mo · images perdues : ${q ? `${q.droppedVideoFrames} / ${q.totalVideoFrames}` : 'n.c.'}`;
+        const fps = q && v.duration ? Math.round(q.totalVideoFrames / v.duration) : null;
+        d.textContent = `${a.kind} · ${v.videoWidth}×${v.videoHeight} · ${fps ? fps + ' images/s · ' : ''}${(info[a.kind].size / 1048576).toFixed(1)} Mo · images perdues : ${q ? `${q.droppedVideoFrames} / ${q.totalVideoFrames}` : 'n.c.'} · écran ${Math.round(screenHz)} Hz`;
         el.appendChild(d); console.log('[annonce]', d.textContent);
         await new Promise((ok) => setTimeout(ok, 2500));
       }
