@@ -72,13 +72,13 @@ export function mirrorBracket(c, ph) {
 }
 
 export const TV_CSS = `
-.mirror{flex:1;min-height:0;display:flex;align-items:stretch;gap:0;--cw:clamp(150px,13vw,250px);--gap:22px;--fs:clamp(13px,1.15vw,22px)}
-.mirror.rows-8{--fs:clamp(12px,.95vw,18px)}.mirror.rows-16{--fs:clamp(10px,.72vw,14px)}
+.mirror{flex:1;min-height:0;overflow:hidden;display:flex;align-items:stretch;gap:0;--cw:clamp(160px,14vw,300px);--gap:20px;--fs:clamp(15px,1.55vw,34px)}
+.mirror.rows-4{--fs:clamp(14px,1.25vw,26px)}.mirror.rows-8{--fs:clamp(10px,.8vw,16px)}.mirror.rows-16{--fs:clamp(9px,.62vw,13px)}
 .bside{flex:1;display:flex;min-width:0}
 .bcolumn,.bcenter{display:flex;flex-direction:column;flex:1;min-width:0;max-width:var(--cw)}
 .bcenter{flex:1.25;max-width:calc(var(--cw) * 1.35)}
 .bside.left{justify-content:flex-end}.bside.right{justify-content:flex-start}
-.mirror h4{height:30px;margin:0;font:800 clamp(11px,.85vw,15px) var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mirror h4{height:clamp(26px,2vw,40px);margin:0;font:800 clamp(12px,1.05vw,21px) var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bbody{flex:1;display:flex;flex-direction:column;min-height:0;position:relative}
 .pair{flex:1;display:flex;flex-direction:column;position:relative}
 .slot{flex:1;display:flex;align-items:center;position:relative;min-height:0}
@@ -106,10 +106,10 @@ export const TV_CSS = `
 .fincard{position:relative;width:100%}
 .fwrap .target{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(100% + 10px);width:clamp(54px,5vw,96px);height:auto}
 .champ{position:absolute;left:0;right:0;bottom:calc(100% + 12px);text-align:center;background:var(--yellow);border-radius:10px;padding:8px 10px}
-.champ span{display:block;font:800 11px var(--body);letter-spacing:.1em;text-transform:uppercase}
+.champ span{display:block;font:800 clamp(11px,.9vw,18px) var(--body);letter-spacing:.1em;text-transform:uppercase}
 .champ b{display:block;font:900 clamp(18px,1.8vw,34px) var(--display);line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .p3{position:absolute;left:0;right:0;top:calc(100% + 16px)}
-.p3 h5{margin:0 0 4px;font:800 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center}
+.p3 h5{margin:0 0 4px;font:800 clamp(11px,.9vw,18px) var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center}
 /* cartes de match */
 .mc{width:100%;background:#f3f3f0;border:1px solid #e2e2de;border-radius:8px;position:relative;font-size:var(--fs)}
 .mc .tr{display:flex;align-items:center;gap:8px;padding:.32em .6em;min-height:1.9em}

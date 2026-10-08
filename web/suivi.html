@@ -18,28 +18,40 @@
 const PAGE_CSS = `
 body{margin:0;border-top:0}
 @media (min-width:1001px){body{overflow:hidden}}
+.disp.tv .dteams li{font-size:clamp(16px,1.65vw,34px);padding:9px 0}
+.disp.tv .dteams .n{width:1.8em}
+.disp.tv .dcol h2,.disp.tv .panel h2{font-size:clamp(20px,2vw,40px)}
+.disp.tv .panel h3{font-size:clamp(17px,1.6vw,32px)}
+.disp.tv .panel p,.disp.tv .panel .row span{font-size:clamp(15px,1.35vw,27px)}
+.disp.tv .fact span{font-size:clamp(11px,.9vw,18px)}.disp.tv .fact b{font-size:clamp(18px,1.8vw,36px)}
 .disp.tv{gap:10px;padding:12px 20px}
 .tvhead{display:flex;justify-content:space-between;align-items:center;gap:16px;border-top:8px solid #1d1d1b;margin:-12px -20px 0;padding:10px 20px 8px;border-bottom:3px solid var(--yellow)}
 .tvbrand{display:flex;align-items:center;gap:14px}.tvbrand .logo{height:clamp(40px,4.6vw,78px);width:auto}
-.tvtitle{font:900 clamp(28px,3vw,54px) var(--display);line-height:1}
-.livebadge{align-self:center;background:var(--orange);color:#fff;font:800 clamp(12px,1vw,18px) var(--body);letter-spacing:.08em;text-transform:uppercase;padding:6px 14px;border-radius:30px}
-.tvmain{flex:1;min-height:0;display:flex;flex-direction:column}
+.tvtitle{font:900 clamp(30px,3.6vw,68px) var(--display);line-height:1}
+.disp.tv .eyebrow{font-size:clamp(12px,1.05vw,21px)}
+.disp.tv .kstats b{font-size:clamp(26px,2.9vw,58px)}
+.disp.tv .kstats span{font-size:clamp(11px,.9vw,18px)}
+.livebadge{align-self:center;background:var(--orange);color:#fff;font:800 clamp(13px,1.25vw,24px) var(--body);letter-spacing:.08em;text-transform:uppercase;padding:6px 14px;border-radius:30px}
+.tvmain{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .tvviewhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
-.tvviewhead h2{font-size:clamp(18px,1.6vw,30px)}
-.tvdots{display:flex;gap:8px}.tvdots span{font:800 12px var(--body);letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:20px;background:#f3f3f0;color:var(--muted)}.tvdots span.on{background:#1d1d1b;color:#fff}
+.tvviewhead h2{font-size:clamp(20px,2vw,40px)}
+.tvdots{display:flex;gap:8px}.tvdots span{font:800 clamp(12px,.95vw,19px) var(--body);letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:20px;background:#f3f3f0;color:var(--muted)}.tvdots span.on{background:#1d1d1b;color:#fff}
 .tvstrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;flex:none}
-.tvm,.tvlist{border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:#fff;font-size:clamp(13px,1vw,18px)}
+.tvm,.tvlist{border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:#fff;font-size:clamp(14px,1.35vw,27px);min-width:0}
 .tvm.on{border:2px solid var(--orange)}
-.tvmh{display:flex;justify-content:space-between;align-items:baseline}.tvmh b{font:900 clamp(15px,1.3vw,24px) var(--display)}.tvmh span{color:var(--muted);font-size:.85em}
-.tvvs{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin:4px 0}.tvvs b{font-size:1.15em}.tvvs i{color:var(--orange);font-weight:800}
+.tvmh{display:flex;justify-content:space-between;align-items:baseline}.tvmh b{font:900 clamp(17px,1.8vw,36px) var(--display)}.tvmh span{color:var(--muted);font-size:.85em}
+.tvvs{display:flex;flex-direction:column;margin:4px 0;line-height:1.15}.tvvs b{font-size:1.15em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tvvs i{color:var(--orange);font-weight:800;font-size:.8em}
+.tvm small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tvstrip{max-height:25vh}
 .tvm small,.tvqr small{color:var(--muted)}
-.tvlist h4{margin:0 0 4px;font:800 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tvlist h4{margin:0 0 4px;font:800 clamp(12px,.95vw,19px) var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .tvlist div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tvqr{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px 12px}.tvqr .qrBox{width:92px;padding:4px;border:0}
-.tvpod{grid-column:1/-2;display:flex;gap:12px}.pd{flex:1;display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:10px 14px}.pd b{font:900 clamp(16px,1.5vw,28px) var(--display)}.pd small{color:var(--muted)}.pd.pd1{background:var(--yellow);border-color:var(--yellow)}
+.tvqr{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:clamp(13px,1.05vw,21px)}.tvqr .qrBox{width:clamp(92px,7vw,150px);padding:4px;border:0}
+.tvpod{grid-column:1/-2;display:flex;gap:12px}.pd{flex:1;display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:10px 14px}.pd b{font:900 clamp(18px,2vw,40px) var(--display)}.pd small{font-size:clamp(13px,1vw,20px)}.pd small{color:var(--muted)}.pd.pd1{background:var(--yellow);border-color:var(--yellow)}
 .tvpools{flex:1;min-height:0;display:grid;grid-template-columns:repeat(var(--n),1fr);gap:14px;overflow:hidden}
-.tvpool{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-height:0;--fs:clamp(12px,.9vw,17px)}
-.tvpool .std{font-size:clamp(13px,1vw,19px)}.tvpool .pms{display:grid;gap:12px 8px;grid-template-columns:1fr 1fr;padding-top:8px}
+.tvpool{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;min-height:0;--fs:clamp(13px,1.15vw,23px)}
+.tvpool h3{font-size:clamp(16px,1.5vw,30px)}
+.tvpool .std{font-size:clamp(14px,1.35vw,27px)}.tvpool .pms{display:grid;gap:12px 8px;grid-template-columns:1fr 1fr;padding-top:8px}
 `;
 import { sb, loadVenue, loadContestFull } from './js/sb.js';
 import { SITE_URL, ASSETS_URL, LOGO_PATH } from './config.js';
@@ -85,7 +97,7 @@ function header(c, title) {
 /* Avant le tirage : liste des équipes, infos du concours, record et QR code */
 function preDraw() {
   const teams = c.teams.filter((t) => t.status !== 'annulee'), N = E.machines(settings);
-  const per = 12, pages = Math.max(1, Math.ceil(teams.length / per)), pg = page % pages;
+  const per = 8, pages = Math.max(1, Math.ceil(teams.length / per)), pg = page % pages;
   const col1 = `<section class="panel dcol"><div class="row" style="justify-content:space-between"><h2>Équipes</h2>${pages > 1 ? `<span class="muted num">${pg + 1}/${pages}</span>` : ''}</div>
     ${teams.length ? `<ul class="dteams">${teams.slice(pg * per, pg * per + per).map((t, i) => { const s = teamState(t); return `<li><span class="n num">${pg * per + i + 1}</span><span class="who"><b>${esc(t.team_name)}</b><small>${esc(t.captain_name)}${t.mate_name ? ' &amp; ' + esc(t.mate_name) : ' · solo'}</small></span><span class="dst ${s.k}">${s.l}</span></li>`; }).join('')}</ul>` : '<div class="empty">Aucune équipe inscrite pour l’instant.</div>'}</section>`;
   const col2 = `<section class="panel dcol"><h2>Avant le tirage</h2><div class="facts"><div class="fact"><span>Format</span><b>${c.format === 'poules' ? 'Poules + tableau' : 'Élimination directe'}</b></div><div class="fact"><span>Jeu</span><b>${esc(c.game)}</b></div><div class="fact"><span>Finale</span><b>${esc(c.final_game)}</b></div><div class="fact"><span>Machines</span><b>${N}</b></div></div><p class="muted">Inscription sur votre téléphone ou au comptoir jusqu’à ${hhmm(c.deadline_time).replace(':', 'h')}. Le tableau s’affichera ici au tirage au sort.</p></section>`;
