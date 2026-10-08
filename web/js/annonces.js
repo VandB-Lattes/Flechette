@@ -30,7 +30,7 @@ export const ANN_CSS = `
 .ann{position:fixed;inset:0;z-index:50;background:#1d1d1b;color:#fff;overflow:hidden;display:grid;opacity:0;transition:opacity .5s}
 .ann.on{opacity:1}
 .ann video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.ann .txt{position:relative;z-index:2;align-self:center;padding:0 6vw;max-width:62vw;text-shadow:0 4px 24px rgba(0,0,0,.6);animation:annIn .8s cubic-bezier(.2,1.2,.4,1) .5s both}
+.ann .txt{position:relative;z-index:2;align-self:center;margin:0 5vw;padding:2.2vh 2.4vw;max-width:62vw;background:rgba(29,29,27,.78);border-radius:14px;animation:annIn .6s ease-out .3s both}
 .ann.qualifies .txt{max-width:none;text-align:center;justify-self:center}
 .ann.finale .txt{max-width:none;text-align:center;justify-self:center;align-self:start;padding-top:9vh}
 .ann .tt{font:900 clamp(40px,8vw,150px)/1 var(--display);letter-spacing:.01em;color:#fbba00;margin:0 0 .25em}
@@ -38,59 +38,77 @@ export const ANN_CSS = `
 .ann .bd em{font-style:normal;color:#fff;background:#d9532b;padding:0 .25em;border-radius:.15em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 .ann.finale .bd em{background:#fbba00;color:#1d1d1b}
 .ann .brand{position:absolute;z-index:2;left:3vw;bottom:3vh;height:clamp(36px,5vw,90px);width:auto}
-.ann .bar{position:absolute;z-index:3;left:0;bottom:0;height:8px;background:#fbba00;animation:annBar linear forwards}
+.ann .bar{position:absolute;z-index:3;left:0;right:0;bottom:0;height:8px;background:#fbba00;transform-origin:left;transform:scaleX(0);animation:annBar linear forwards}
+.ann .diag{position:absolute;z-index:4;right:1vw;bottom:2vh;font:700 14px var(--body);background:#000;color:#fff;padding:6px 10px;border-radius:6px}
 .ann.finale .tt{font-size:clamp(36px,6.4vw,124px);white-space:nowrap}
-@keyframes annIn{from{opacity:0;transform:translateY(40px) scale(.96)}to{opacity:1;transform:none}}
-@keyframes annBar{from{width:0}to{width:100%}}
+@keyframes annIn{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
+@keyframes annBar{to{transform:scaleX(1)}}
 @media (prefers-reduced-motion:reduce){.ann *{animation-duration:.01s!important}}
 `;
 
-/** File d'attente des annonces : une à la fois, puis retour au tableau */
-export function createAnnouncer(logoUrl, onIdle) {
+/** File d'attente des annonces : une à la fois, puis retour au tableau.
+    Options : onIdle (appelé quand plus rien n'est affiché), diag (affiche la qualité de lecture, pour l'aperçu). */
+export function createAnnouncer(logoUrl, onIdle, diag = false) {
   const queue = []; let busy = false;
-  /* Les vidéos sont téléchargées une fois en entier dans la mémoire de la TV au chargement de l'écran
-     (puis toutes les 30 minutes) : la lecture ne dépend plus du réseau, donc plus de saccades ni d'attente. */
-  const ready = {};
+  /* Les vidéos sont téléchargées en entier dans la mémoire de la TV à l'ouverture de l'écran (puis toutes les 30 minutes)
+     et un lecteur vidéo est préparé d'avance pour chacune : au moment de l'annonce, la lecture démarre sans attente. */
+  const players = {}, info = {};
   async function preload() {
     for (const k of Object.keys(VIDEOS)) {
       try {
         const r = await fetch(videoUrl(k), { cache: 'no-cache' });
-        if (!r.ok || !(r.headers.get('content-type') || '').startsWith('video')) { if (ready[k]) { URL.revokeObjectURL(ready[k]); delete ready[k]; } continue; }
-        const url = URL.createObjectURL(await r.blob());
-        if (ready[k]) URL.revokeObjectURL(ready[k]);
-        ready[k] = url;
+        if (!r.ok || !(r.headers.get('content-type') || '').startsWith('video')) { delete players[k]; continue; }
+        const blob = await r.blob();
+        if (info[k]?.size === blob.size && players[k]) continue;   // vidéo inchangée
+        const v = document.createElement('video');
+        Object.assign(v, { muted: true, playsInline: true, preload: 'auto' });
+        v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
+        const old = players[k]; v.src = URL.createObjectURL(blob); v.load();
+        await new Promise((ok) => { v.addEventListener('canplaythrough', ok, { once: true }); v.addEventListener('error', ok, { once: true }); setTimeout(ok, 15000); });
+        if (v.error) continue;
+        players[k] = v; info[k] = { size: blob.size };
+        if (old) URL.revokeObjectURL(old.src);
       } catch { /* réseau indisponible : on garde la version déjà en mémoire */ }
     }
   }
   const loaded = preload(); setInterval(() => { if (!busy) preload(); }, 30 * 60000);
+  const app = () => document.getElementById('app');
+
   async function show(a) {
     busy = true;
     const el = document.createElement('div');
     el.className = `ann ${a.kind}`;
-    // seule la vidéo est animée : plus de cible ni de confettis dessinés par l'écran
-    el.innerHTML = `<video muted playsinline preload="auto"></video>
-      <div class="txt"><div class="tt">${a.title}</div><div class="bd">${a.body}</div></div>
+    el.innerHTML = `<div class="txt"><div class="tt">${a.title}</div><div class="bd">${a.body}</div></div>
       ${logoUrl ? `<img class="brand" src="${logoUrl}" alt="" onerror="this.remove()">` : ''}<div class="bar" style="animation-duration:${DURATION[a.kind]}ms"></div>`;
+    const v = players[a.kind];
+    if (v) { v.pause(); v.currentTime = 0; el.prepend(v); }
     document.body.appendChild(el);
-    const v = el.querySelector('video');
-    const fallback = () => v.remove();
-    v.addEventListener('error', fallback);   // vidéo absente ou illisible : l'animation de secours reste visible
-    if (ready[a.kind]) v.src = ready[a.kind]; else v.remove();   // vidéo pas encore en mémoire : animation de secours plutôt qu'une vidéo qui rame
-    // fin de l'annonce : à la fin de la vidéo si elle joue, sinon après la durée de l'animation de secours
-    const finished = new Promise((resolve) => {
-      let t = setTimeout(resolve, DURATION[a.kind]);
-      v.addEventListener('playing', () => {
-        const len = Number.isFinite(v.duration) && v.duration > 1 ? Math.min(v.duration, 30) * 1000 : DURATION[a.kind];
-        el.querySelector('.bar').style.animationDuration = len + 'ms';
-        clearTimeout(t); t = setTimeout(resolve, len + 1500);   // filet de sécurité si « ended » n'arrive pas
-      }, { once: true });
-      v.addEventListener('ended', () => { clearTimeout(t); resolve(); }, { once: true });
-    });
-    if (v.isConnected) v.play().catch(fallback);
     requestAnimationFrame(() => el.classList.add('on'));
-    await finished;
+    // le tableau derrière est masqué pendant l'annonce : la TV ne dessine que la vidéo et le texte
+    setTimeout(() => { if (app()) app().style.visibility = 'hidden'; }, 550);
+    let len = DURATION[a.kind];
+    if (v) {
+      try {
+        await v.play();
+        if (Number.isFinite(v.duration) && v.duration > 1) len = Math.min(v.duration, 30) * 1000;
+        el.querySelector('.bar').style.animationDuration = len + 'ms';
+        await new Promise((ok) => { const t = setTimeout(ok, len + 1500); v.addEventListener('ended', () => { clearTimeout(t); ok(); }, { once: true }); });
+      } catch { await new Promise((ok) => setTimeout(ok, len)); }
+      if (diag) {
+        const q = v.getVideoPlaybackQuality?.();
+        const d = document.createElement('div'); d.className = 'diag';
+        d.textContent = `${a.kind} · ${v.videoWidth}×${v.videoHeight} · ${(info[a.kind].size / 1048576).toFixed(1)} Mo · images perdues : ${q ? `${q.droppedVideoFrames} / ${q.totalVideoFrames}` : 'n.c.'}`;
+        el.appendChild(d); console.log('[annonce]', d.textContent);
+        await new Promise((ok) => setTimeout(ok, 2500));
+      }
+    } else {
+      if (diag) { const d = document.createElement('div'); d.className = 'diag'; d.textContent = `${a.kind} · pas de vidéo en mémoire (absente ou encore en chargement)`; el.appendChild(d); }
+      await new Promise((ok) => setTimeout(ok, len));
+    }
+    if (app()) app().style.visibility = '';
     el.classList.remove('on');
     await new Promise((r) => setTimeout(r, 600));
+    if (v) { v.pause(); v.remove(); }
     el.remove(); busy = false;
     if (queue.length) show(queue.shift()); else onIdle?.();
   }
