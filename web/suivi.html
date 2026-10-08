@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#1d1d1b">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700;900&family=Nunito+Sans:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=14">
+<link rel="stylesheet" href="style.css?v=16">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
 </head>
 <body>
@@ -47,7 +47,8 @@ import { $, esc, fmtDate, hhmm, hm, fmtHM, nowMin, today, weekMonday, hoursOf, c
 import * as E from './js/engine.js';
 import { poolsHTML, tname } from './js/views.js';
 import { mirrorBracket, matchCard, TV_CSS } from './js/tvbracket.js';
-document.head.insertAdjacentHTML('beforeend', `<style>${TV_CSS}${PAGE_CSS}</style>`);
+import { createAnnouncer, detect, kindOf, texts, ANN_CSS } from './js/annonces.js';
+document.head.insertAdjacentHTML('beforeend', `<style>${TV_CSS}${PAGE_CSS}${ANN_CSS}</style>`);
 
 const app = $('#app');
 let view = 0, views = [];
@@ -154,6 +155,13 @@ async function load() {
   if (!pick) { c = null; render(); return; }
   if (pick.id !== c?.id) subscribe(pick.id);
   const [full, { data: rec }] = await Promise.all([loadContestFull(pick.id), sb.from('records').select('*').eq('week_start', weekMonday()).order('score', { ascending: false })]);
+  // annonces : matchs qui viennent de se terminer depuis le dernier chargement
+  if (full) {
+    const anns = prevContest === full.id ? detect(full, prevMatches, machineOf) : [];
+    full.matches.forEach((m) => { if (m.status === 'live' && m.machine) machineOf.set(m.id, m.machine); });
+    prevMatches = new Map(full.matches.map((m) => [m.id, { status: m.status, machine: m.machine }])); prevContest = full.id;
+    anns.forEach((a) => announcer.push(a));
+  }
   c = full; records = rec || []; render();
 }
 function subscribe(id) {
@@ -165,7 +173,15 @@ function subscribe(id) {
 }
 function soon() { clearTimeout(timer); timer = setTimeout(load, 400); }
 
+let prevMatches = null, prevContest = null; const machineOf = new Map();
+const announcer = createAnnouncer(`${ASSETS_URL}/${LOGO_PATH}`);
 venue = await loadVenue(); settings = venue.settings;
+// Aperçu des trois annonces : suivi.html?demo=annonces
+if (new URLSearchParams(location.search).get('demo') === 'annonces') {
+  const demo = { teams: [{ id: 'A', name: 'Les Flèches' }, { id: 'B', name: 'Bull Busters' }], matches: [] };
+  const m = { winner: 'A', loser: 'B' };
+  ['victoire', 'qualifies', 'finale'].forEach((k, i) => announcer.push({ kind: k, ...texts(demo, m, k, 2) }));
+}
 await load();
 setInterval(() => { page++; render(); }, 10000);   // pages d'équipes et chronos
 setInterval(() => { if (views.length > 1) { view++; render(); } }, 20000);   // alterne tableau principal / consolante / poules

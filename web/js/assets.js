@@ -1,6 +1,7 @@
 // Charge les fichiers hébergés dans Supabase Storage (bucket « assets ») et l'illustration de l'en-tête.
 import { ASSETS_URL, LOGO_PATH } from '../config.js';
 import { DART_ART } from './art.js';
+import './pwtoggle.js';
 
 export const assetUrl = (name) => `${ASSETS_URL}/${name.split('/').map(encodeURIComponent).join('/')}`;
 

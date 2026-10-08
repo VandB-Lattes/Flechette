@@ -91,6 +91,7 @@ web/                           le site publié (aucune donnée stockée sur GitH
 - **Mode d'emploi** : onglet de l'espace staff qui explique simplement la création d'un concours, les inscriptions, le soir du concours, l'écran TV et les questions fréquentes.
 - **Aucun bouton vers l'espace staff** côté joueurs. Sur l'écran comptoir (tablette utilisée par les clients pour s'inscrire), le staff en sort par un appui de 3 secondes sur l'heure.
 - **Télévision** : `suivi.html` en plein écran, mise à jour automatique.
+- **Annonces TV** : à chaque résultat, annonce plein écran avec les noms des équipes (victoire en poule ou au premier tour, « Qualifiés ! » dans le tableau final, « Champions du V and B ! » pour la finale), le temps de la vidéo (10 s). Vidéos Flow à déposer dans Réglages › Fichiers du site (`annonce-victoire.mp4`, `annonce-qualifies.mp4`, `annonce-finale.mp4`) ; sans vidéo, animation de secours. Aperçu : `suivi.html?demo=annonces`.
 - **Écran comptoir** (tablette près des machines) : `comptoir.html` sur un appareil autorisé. Inscription sur place, pointage, puis les deux machines avec saisie du gagnant.
 - **Instagram** : lien du site en bio, sticker lien en story. QR code dans l'onglet **Communication**.
 

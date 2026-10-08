@@ -379,8 +379,9 @@ function vReglages() {
     + `<section class="panel" style="margin-top:18px"><h2>Fichiers du site</h2>
     <p class="muted small">Les fichiers volumineux sont stockés dans Supabase (bucket « assets »), pas sur GitHub : logo, images, vidéos pour l’écran du bar. 50 Mo maximum par fichier.</p>
     <form id="assetForm" class="grid2"><div class="field"><label for="aFile">Fichier</label><input id="aFile" type="file" accept="image/*,video/mp4,video/webm,font/woff2,application/pdf" required></div>
-    <div class="field"><label for="aName">Enregistrer sous</label><select id="aName"><option value="logo">Logo du bar (Flechettes/Images/logo.png, affiché en tête des pages)</option><option value="">Nom d’origine du fichier</option></select></div>
+    <div class="field"><label for="aName">Enregistrer sous</label><select id="aName"><option value="logo">Logo du bar (Flechettes/Images/logo.png, affiché en tête des pages)</option><option value="annonce-victoire.mp4">Vidéo TV : victoire (poule, 1er tour)</option><option value="annonce-qualifies.mp4">Vidéo TV : qualifiés (tableau final)</option><option value="annonce-finale.mp4">Vidéo TV : grande finale</option><option value="">Nom d’origine du fichier</option></select></div>
     <div class="row"><button class="btn" type="submit">Envoyer</button></div></form>
+    <p class="muted small">Annonces de l’écran TV : déposez les trois vidéos Flow avec le bon choix dans « Enregistrer sous » (MP4, 16:9). Sans vidéo, une animation aux couleurs V and B s’affiche à la place. <a href="suivi.html?demo=annonces" target="_blank" rel="noopener">Voir un aperçu des trois annonces</a></p>
     <div id="assetList"><div class="empty">Chargement…</div></div></section>`;
 }
 async function loadAccounts() {
@@ -514,8 +515,9 @@ main.addEventListener('submit', async (e) => {
   if (f.id === 'assetForm') {
     const file = $('#aFile').files[0]; if (!file) return toast('Choisissez un fichier');
     if (file.size > 50 * 1024 * 1024) return toast('Fichier trop lourd (50 Mo maximum)');
-    const name = $('#aName').value === 'logo' ? LOGO_PATH : `${ASSETS_DIR}/` + file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]+/g, '-');
-    const { error } = await sb.storage.from('assets').upload(name, file, { upsert: true, contentType: file.type, cacheControl: name === LOGO_PATH ? '300' : '86400' });
+    const sel = $('#aName').value;
+    const name = sel === 'logo' ? LOGO_PATH : sel ? `${ASSETS_DIR}/${sel}` : `${ASSETS_DIR}/` + file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]+/g, '-');
+    const { error } = await sb.storage.from('assets').upload(name, file, { upsert: true, contentType: file.type, cacheControl: name === LOGO_PATH || sel ? '300' : '86400' });
     toast(error ? 'Envoi impossible : ' + error.message : `${name} envoyé`); f.reset(); loadAssets();
   }
   if (f.id === 'accForm') { const { error } = await sb.rpc('create_staff_account', { p_login: v('accLogin'), p_password: $('#accPass').value }); if (error) return toast(clean(error.message)); toast('Identifiant ajouté'); f.reset(); loadAccounts(); }

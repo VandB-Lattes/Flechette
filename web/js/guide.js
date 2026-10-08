@@ -71,6 +71,7 @@ export function guideHTML() {
       <li>Sur la télé ou le projecteur, ouvrez l’<b>Écran TV</b> (bouton en haut de l’espace staff) et mettez-le en plein écran.</li>
       <li><b>Avant le tirage</b> : la liste des équipes inscrites, les places libres et un QR code pour s’inscrire.</li>
       <li><b>Pendant le tournoi</b> : le tableau complet, la moitié gauche et la moitié droite qui se rejoignent sur la finale au centre. Les matchs en cours sont entourés en orange avec le numéro de la machine, les gagnants en gras avec leur score. En bas : ce qui se joue sur chaque machine, les prochains matchs et les derniers résultats.</li>
+      <li><b>Annonces</b> : à chaque résultat, l’écran affiche en grand une annonce avec le nom des équipes (victoire en poule ou au premier tour, « Qualifiés ! » dans le tableau final, « Champions du V and B ! » pour la finale), puis revient tout seul au tableau. Les vidéos se déposent dans Réglages › Fichiers du site ; le lien « Voir un aperçu des trois annonces » permet de les vérifier.</li>
       <li>Le tableau s’adapte tout seul au nombre d’équipes, et alterne toutes les 20 secondes avec la consolante (ou les poules).</li>
       <li><b>À la fin</b> : le vainqueur au centre et le podium en bas de l’écran.</li>
     </ul>`)}
