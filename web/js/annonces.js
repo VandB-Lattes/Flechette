@@ -21,7 +21,7 @@ export function kindOf(c, m) {
 export function texts(c, m, kind, machine) {
   const W = `<em>${esc(tname(c, m.winner))}</em>`, L = `<em>${esc(tname(c, m.loser))}</em>`;
   if (kind === 'finale') return { title: 'CHAMPIONS DU V and B !', body: `Victoire éclatante de ${W} !<br>Félicitations aux nouveaux rois de la cible ! 🏆🎯` };
-  if (kind === 'qualifies') return { title: 'QUALIFIÉS !', body: `${W} s’impose et continue sa course vers le titre !<br>${L}, merci pour ce beau match !` };
+  if (kind === 'qualifies') return { title: 'QUALIFIÉS !', body: `${W} s’impose et continue sa course !<br>${L}, merci pour ce beau match !` };
   return { title: 'VICTOIRE !', body: `${W} décroche la victoire${machine ? ` sur la Machine ${machine}` : ''} !<br>Un pas de plus vers les phases finales.` };
 }
 
@@ -59,8 +59,23 @@ export const ANN_CSS = `
 `;
 
 /** File d'attente des annonces : une à la fois, puis retour au tableau */
-export function createAnnouncer(logoUrl) {
+export function createAnnouncer(logoUrl, onIdle) {
   const queue = []; let busy = false;
+  /* Les vidéos sont téléchargées une fois en entier dans la mémoire de la TV au chargement de l'écran
+     (puis toutes les 30 minutes) : la lecture ne dépend plus du réseau, donc plus de saccades ni d'attente. */
+  const ready = {};
+  async function preload() {
+    for (const k of Object.keys(VIDEOS)) {
+      try {
+        const r = await fetch(videoUrl(k), { cache: 'no-cache' });
+        if (!r.ok || !(r.headers.get('content-type') || '').startsWith('video')) { if (ready[k]) { URL.revokeObjectURL(ready[k]); delete ready[k]; } continue; }
+        const url = URL.createObjectURL(await r.blob());
+        if (ready[k]) URL.revokeObjectURL(ready[k]);
+        ready[k] = url;
+      } catch { /* réseau indisponible : on garde la version déjà en mémoire */ }
+    }
+  }
+  const loaded = preload(); setInterval(() => { if (!busy) preload(); }, 30 * 60000);
   async function show(a) {
     busy = true;
     const el = document.createElement('div');
@@ -73,30 +88,33 @@ export function createAnnouncer(logoUrl) {
       ${logoUrl ? `<img class="brand" src="${logoUrl}" alt="" onerror="this.remove()">` : ''}<div class="bar" style="animation-duration:${DURATION[a.kind]}ms"></div>`;
     document.body.appendChild(el);
     const v = el.querySelector('video');
-    v.addEventListener('error', () => v.remove());   // pas de vidéo déposée : l'animation de secours reste visible
-    v.src = videoUrl(a.kind);
+    const fx = el.querySelector('.fx');
+    const fallback = () => { v.remove(); fx.style.display = ''; };
+    v.addEventListener('error', fallback);   // vidéo absente ou illisible : l'animation de secours reste visible
+    if (ready[a.kind]) v.src = ready[a.kind]; else v.remove();   // vidéo pas encore en mémoire : animation de secours plutôt qu'une vidéo qui rame
     // fin de l'annonce : à la fin de la vidéo si elle joue, sinon après la durée de l'animation de secours
     const finished = new Promise((resolve) => {
       let t = setTimeout(resolve, DURATION[a.kind]);
       v.addEventListener('playing', () => {
-        el.querySelector('.fx').style.opacity = '0';
+        fx.style.display = 'none';   // confettis arrêtés pendant la vidéo : toute la puissance de la TV pour la lecture
         const len = Number.isFinite(v.duration) && v.duration > 1 ? Math.min(v.duration, 30) * 1000 : DURATION[a.kind];
         el.querySelector('.bar').style.animationDuration = len + 'ms';
         clearTimeout(t); t = setTimeout(resolve, len + 1500);   // filet de sécurité si « ended » n'arrive pas
       }, { once: true });
       v.addEventListener('ended', () => { clearTimeout(t); resolve(); }, { once: true });
     });
-    v.play().catch(() => v.remove());
+    if (v.isConnected) v.play().catch(fallback);
     requestAnimationFrame(() => el.classList.add('on'));
     await finished;
     el.classList.remove('on');
     await new Promise((r) => setTimeout(r, 600));
     el.remove(); busy = false;
-    if (queue.length) show(queue.shift());
+    if (queue.length) show(queue.shift()); else onIdle?.();
   }
   return {
     push(a) { if (busy) queue.push(a); else show(a); },
     get busy() { return busy || queue.length > 0; },
+    loaded,
   };
 }
 

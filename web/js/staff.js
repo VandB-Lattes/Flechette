@@ -516,6 +516,7 @@ main.addEventListener('submit', async (e) => {
     const file = $('#aFile').files[0]; if (!file) return toast('Choisissez un fichier');
     if (file.size > 50 * 1024 * 1024) return toast('Fichier trop lourd (50 Mo maximum)');
     const sel = $('#aName').value;
+    if (file.type.startsWith('video') && file.size > 15 * 1024 * 1024) toast(`Vidéo lourde (${Math.round(file.size / 1048576)} Mo) : elle peut ramer sur la TV. Conseil : la compresser en 1080p ou 720p (moins de 15 Mo).`);
     const name = sel === 'logo' ? LOGO_PATH : sel ? `${ASSETS_DIR}/${sel}` : `${ASSETS_DIR}/` + file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]+/g, '-');
     const { error } = await sb.storage.from('assets').upload(name, file, { upsert: true, contentType: file.type, cacheControl: name === LOGO_PATH || sel ? '300' : '86400' });
     toast(error ? 'Envoi impossible : ' + error.message : `${name} envoyé`); f.reset(); loadAssets();
