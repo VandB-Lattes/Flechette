@@ -29,7 +29,8 @@ header.top{display:flex;flex-direction:column;gap:8px}
 .pill.warn{background:transparent;border:1.5px solid var(--warn);color:var(--warn)}
 @keyframes blink{50%{opacity:.25}}
 .hero{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 20px;align-items:center}
-.hero svg{width:clamp(96px,22vw,170px);height:auto}
+.hero svg{width:clamp(56px,15vw,170px);height:auto}
+@media (max-width:600px){.hero svg{width:56px}#art{align-self:start;margin-top:4px}}
 .tagline{font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:clamp(14px,2.6vw,19px);color:var(--ink)}
 .tagline b{color:var(--teal)}
 .headActions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 4px}
