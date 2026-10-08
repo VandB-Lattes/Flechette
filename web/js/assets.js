@@ -6,4 +6,9 @@ export const assetUrl = (name) => `${ASSETS_URL}/${name.split('/').map(encodeURI
 
 document.querySelectorAll('[data-asset]').forEach((el) => { el.src = assetUrl(el.dataset.asset === 'logo' ? LOGO_PATH : el.dataset.asset); });
 const art = document.getElementById('art');
-if (art) art.innerHTML = DART_ART;
+if (art) {
+  art.innerHTML = DART_ART;
+  // taille fixée directement sur l'image : petite sur téléphone, même si une ancienne feuille de style est encore en mémoire
+  const svg = art.firstElementChild;
+  if (svg) Object.assign(svg.style, { width: 'clamp(44px, 12vw, 150px)', height: 'auto', display: 'block' });
+}
