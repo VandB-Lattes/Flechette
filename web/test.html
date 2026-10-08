@@ -55,7 +55,7 @@
 import { sb } from './js/sb.js';
 import { SUPABASE_ANON_KEY } from './config.js';
 import { $, esc, toast } from './js/util.js';
-import { subscribeDevice, isIOS, standalone } from './js/push.js';
+import { subscribeDevice, isIOS, standalone, pushMissing, inAppBrowser, isAndroid, chromeLink } from './js/push.js';
 
 const TEST_ID = '7e570000-0000-4000-8000-000000000001';
 const list = $('#checks');
@@ -76,8 +76,11 @@ const CHECKS = [
   ['storage', 'Mémoire du téléphone', async () => { localStorage.setItem('vb-test', '1'); const ok = localStorage.getItem('vb-test') === '1'; localStorage.removeItem('vb-test'); return ok ? ['ok', 'Le code d’équipe et l’inscription restent sur ce téléphone.'] : ['ko', 'Navigation privée ? Le code d’équipe ne sera pas retenu.']; }],
   ['sw', 'Application installable', async () => { if (!('serviceWorker' in navigator)) return ['ko', 'Navigateur trop ancien.']; await timeout(navigator.serviceWorker.register('sw.js'), 10000); return ['ok', standalone() ? 'Ouverte depuis l’écran d’accueil.' : 'Peut être ajoutée à l’écran d’accueil (menu du navigateur › Ajouter à l’écran d’accueil).']; }],
   ['notif', 'Notifications', async () => {
-    const ok = 'PushManager' in window && 'Notification' in window;
-    if (!ok) return isIOS() && !standalone() ? ['warn', 'iPhone : touchez <b>Partager › Sur l’écran d’accueil</b>, ouvrez l’application depuis l’icône, puis rouvrez cette page (adresse se terminant par test.html).'] : ['ko', 'Ce navigateur ne gère pas les notifications. Essayez Chrome.'];
+    const miss = pushMissing();
+    if (miss.length && inAppBrowser()) return ['ko', `Page ouverte dans le navigateur d’une autre application (Instagram, Facebook…), qui ne gère pas les notifications. ${isAndroid() ? `<a href="${chromeLink()}">Ouvrir dans Chrome</a>` : 'Touchez ⋯ puis « Ouvrir dans le navigateur ».'}`];
+    const ok = !miss.length;
+    if (!ok) return isIOS() && !standalone() ? ['warn', 'iPhone : touchez <b>Partager › Sur l’écran d’accueil</b>, ouvrez l’application depuis l’icône, puis rouvrez cette page (adresse se terminant par test.html).'] : ['ko', `Ce navigateur ne gère pas les notifications (manque : ${esc(miss.join(', '))}). Essayez Chrome à jour.`];
+    if (!window.Notification) return ['warn', 'Prêtes : utilisez le bouton « Notification de test ».'];
     if (Notification.permission === 'denied') return ['ko', 'Bloquées pour ce site : réglages du téléphone › notifications du navigateur.'];
     return [Notification.permission === 'granted' ? 'ok' : 'warn', Notification.permission === 'granted' ? 'Autorisées. Faites la notification de test ci-dessous.' : 'Pas encore autorisées : utilisez le bouton « Notification de test ».'];
   }],
@@ -91,7 +94,7 @@ async function run() {
 }
 
 function pushBox() {
-  const el = $('#pushBox'), ok = 'PushManager' in window && 'Notification' in window;
+  const el = $('#pushBox'), ok = !pushMissing().length;
   el.innerHTML = ok ? '<button class="btn red xl" id="pushTest">Recevoir une notification de test</button><p class="muted small" id="pushMsg"></p>'
     : `<div class="notice">${isIOS() && !standalone() ? 'Sur iPhone, ajoutez d’abord l’application à l’écran d’accueil (Partager › Sur l’écran d’accueil), puis ouvrez cette page depuis l’icône.' : 'Ce navigateur ne gère pas les notifications.'}</div>`;
   $('#pushTest')?.addEventListener('click', async (e) => {
@@ -134,7 +137,7 @@ async function journey() {
 
 function device() {
   const ua = navigator.userAgent, ios = ua.match(/OS (\d+)_(\d+)/), android = ua.match(/Android (\d+)/);
-  const browser = /CriOS|Chrome/.test(ua) && !/Edg/.test(ua) ? 'Chrome' : /Firefox|FxiOS/.test(ua) ? 'Firefox' : /SamsungBrowser/.test(ua) ? 'Samsung Internet' : /Edg/.test(ua) ? 'Edge' : /Safari/.test(ua) ? 'Safari' : 'Autre';
+  const browser = /Instagram/.test(ua) ? 'Navigateur d’Instagram' : /FBAN|FBAV|FB_IAB|Messenger/.test(ua) ? 'Navigateur de Facebook' : inAppBrowser() ? 'Navigateur d’une application' : /CriOS|Chrome/.test(ua) && !/Edg/.test(ua) ? 'Chrome' : /Firefox|FxiOS/.test(ua) ? 'Firefox' : /SamsungBrowser/.test(ua) ? 'Samsung Internet' : /Edg/.test(ua) ? 'Edge' : /Safari/.test(ua) ? 'Safari' : 'Autre';
   const sys = ios && isIOS() ? `iPhone / iPad, iOS ${ios[1]}.${ios[2]}${+ios[1] < 16 || (+ios[1] === 16 && +ios[2] < 4) ? ' (notifications : iOS 16.4 minimum)' : ''}` : android ? `Android ${android[1]}` : 'Ordinateur ou autre';
   $('#device').innerHTML = `<div class="facts"><div class="fact"><span>Système</span><b>${esc(sys)}</b></div><div class="fact"><span>Navigateur</span><b>${esc(browser)}</b></div><div class="fact"><span>Écran</span><b>${screen.width} × ${screen.height}</b></div><div class="fact"><span>Mode</span><b>${standalone() ? 'Application installée' : 'Navigateur'}</b></div></div>`;
 }
