@@ -17,9 +17,20 @@ export function kindOf(c, m) {
   return 'victoire';   // poules, premier tour, consolante, match pour la 3e place
 }
 
-/** Texte de l'annonce, avec les noms en surbrillance */
+/* Chaque équipe garde sa propre couleur de surlignage (toujours la même d'une annonce à l'autre),
+   aux couleurs V and B ; deux équipes d'une même annonce n'ont jamais la même. */
+const TEAM_COLORS = [['#d9532b', '#fff'], ['#2e7a72', '#fff'], ['#fbba00', '#1d1d1b'], ['#ffffff', '#1d1d1b']];   // orange, teal, jaune, blanc
+function colorIndex(id) { let h = 0; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return h % TEAM_COLORS.length; }
+function teamTag(c, id, avoid) {
+  let i = colorIndex(id); if (i === avoid) i = (i + 1) % TEAM_COLORS.length;
+  const [bg, fg] = TEAM_COLORS[i];
+  return { i, html: `<em style="background:${bg};color:${fg}">${esc(tname(c, id))}</em>` };
+}
+
+/** Texte de l'annonce, avec les noms en surbrillance (une couleur par équipe) */
 export function texts(c, m, kind, machine) {
-  const W = `<em>${esc(tname(c, m.winner))}</em>`, L = `<em>${esc(tname(c, m.loser))}</em>`;
+  const w = teamTag(c, m.winner), l = teamTag(c, m.loser, w.i);
+  const W = w.html, L = l.html;
   if (kind === 'finale') return { title: 'CHAMPIONS DU V and B !', body: `Victoire éclatante de ${W} !<br>Félicitations aux nouveaux rois de la cible ! 🏆🎯` };
   if (kind === 'qualifies') return { title: 'QUALIFIÉS !', body: `${W} s’impose et continue sa course !<br>${L}, merci pour ce beau match !` };
   return { title: 'VICTOIRE !', body: `${W} décroche la victoire${machine ? ` sur la Machine ${machine}` : ''} !<br>Un pas de plus vers les phases finales.` };
@@ -36,11 +47,17 @@ export const ANN_CSS = `
 .ann .tt{font:900 clamp(40px,8vw,150px)/1 var(--display);letter-spacing:.01em;color:#fbba00;margin:0 0 .25em}
 .ann .bd{font:800 clamp(22px,3.1vw,58px)/1.25 var(--body)}
 .ann .bd em{font-style:normal;color:#fff;background:#d9532b;padding:0 .25em;border-radius:.15em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
-.ann.finale .bd em{background:#fbba00;color:#1d1d1b}
 .ann .brand{position:absolute;z-index:2;left:3vw;bottom:3vh;height:clamp(36px,5vw,90px);width:auto}
 .ann .bar{position:absolute;z-index:3;left:0;right:0;bottom:0;height:8px;background:#fbba00;transform-origin:left;transform:scaleX(0);animation:annBar linear forwards}
-.ann .diag{position:absolute;z-index:4;right:1vw;bottom:2vh;font:700 14px var(--body);background:#000;color:#fff;padding:6px 10px;border-radius:6px}
+.ann .diag{position:absolute;z-index:4;right:1vw;top:2vh;font:700 14px var(--body);background:#000;color:#fff;padding:6px 10px;border-radius:6px}
 .ann.finale .tt{font-size:clamp(36px,6.4vw,124px);white-space:nowrap}
+/* Texte sous la vidéo : rien ne recouvre l'image, la TV n'a plus à mélanger texte et vidéo à chaque image */
+.ann.below{grid-template-rows:minmax(0,1fr) auto}
+.ann.below video{position:relative;inset:auto;grid-row:1;width:100%;height:100%;min-height:0;object-fit:cover}
+.ann.below .txt,.ann.below.qualifies .txt,.ann.below.finale .txt{grid-row:2;align-self:stretch;justify-self:stretch;max-width:none;margin:0;border-radius:0;background:#1d1d1b;padding:2.2vh 12vw 3.2vh;text-align:center}
+.ann.below .tt{font-size:clamp(28px,4.4vw,84px);white-space:nowrap}
+.ann.below .bd{font-size:clamp(18px,2.3vw,44px)}
+.ann.below .brand{height:clamp(28px,3.6vw,64px)}
 @keyframes annIn{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
 @keyframes annBar{to{transform:scaleX(1)}}
 @media (prefers-reduced-motion:reduce){.ann *{animation-duration:.01s!important}}
@@ -48,7 +65,7 @@ export const ANN_CSS = `
 
 /** File d'attente des annonces : une à la fois, puis retour au tableau.
     Options : onIdle (appelé quand plus rien n'est affiché), diag (affiche la qualité de lecture, pour l'aperçu). */
-export function createAnnouncer(logoUrl, onIdle, diag = false) {
+export function createAnnouncer(logoUrl, onIdle, diag = false, textMode = () => 'sous') {
   const queue = []; let busy = false;
   /* Les vidéos sont téléchargées en entier dans la mémoire de la TV à l'ouverture de l'écran (puis toutes les 30 minutes)
      et un lecteur vidéo est préparé d'avance pour chacune : au moment de l'annonce, la lecture démarre sans attente. */
@@ -79,7 +96,7 @@ export function createAnnouncer(logoUrl, onIdle, diag = false) {
   async function show(a) {
     busy = true;
     const el = document.createElement('div');
-    el.className = `ann ${a.kind}`;
+    el.className = `ann ${a.kind}${textMode() === 'sur' ? '' : ' below'}`;
     el.innerHTML = `<div class="txt"><div class="tt">${a.title}</div><div class="bd">${a.body}</div></div>
       ${logoUrl ? `<img class="brand" src="${logoUrl}" alt="" onerror="this.remove()">` : ''}<div class="bar" style="animation-duration:${DURATION[a.kind]}ms"></div>`;
     const v = players[a.kind];
@@ -93,9 +110,9 @@ export function createAnnouncer(logoUrl, onIdle, diag = false) {
     let len = DURATION[a.kind];
     if (v) {
       try {
+        el.querySelector('.bar')?.remove();   // rien d'animé pendant la vidéo
         await v.play();
         if (Number.isFinite(v.duration) && v.duration > 1) len = Math.min(v.duration, 30) * 1000;
-        el.querySelector('.bar').style.animationDuration = len + 'ms';
         await new Promise((ok) => { const t = setTimeout(ok, len + 1500); v.addEventListener('ended', () => { clearTimeout(t); ok(); }, { once: true }); });
       } catch { await new Promise((ok) => setTimeout(ok, len)); }
       if (diag) {

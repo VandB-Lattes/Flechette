@@ -175,7 +175,9 @@ function subscribe(id) {
 function soon() { clearTimeout(timer); timer = setTimeout(load, 400); }
 
 let prevMatches = null, prevContest = null; const machineOf = new Map();
-const announcer = createAnnouncer(`${ASSETS_URL}/${LOGO_PATH}`, () => render(), new URLSearchParams(location.search).get('demo') === 'annonces');
+const QS = new URLSearchParams(location.search);
+// texte des annonces : « sous » la vidéo (par défaut, le plus fluide) ou « sur » la vidéo ; réglage dans Staff › Réglages
+const announcer = createAnnouncer(`${ASSETS_URL}/${LOGO_PATH}`, () => render(), QS.get('demo') === 'annonces', () => QS.get('texte') || settings?.annText || 'sous');
 venue = await loadVenue(); settings = venue.settings;
 // Aperçu des trois annonces : suivi.html?demo=annonces
 if (new URLSearchParams(location.search).get('demo') === 'annonces') {

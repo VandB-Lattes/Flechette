@@ -381,6 +381,8 @@ function vReglages() {
     <form id="assetForm" class="grid2"><div class="field"><label for="aFile">Fichier</label><input id="aFile" type="file" accept="image/*,video/mp4,video/webm,font/woff2,application/pdf" required></div>
     <div class="field"><label for="aName">Enregistrer sous</label><select id="aName"><option value="logo">Logo du bar (Flechettes/Images/logo.png, affiché en tête des pages)</option><option value="annonce-victoire.mp4">Vidéo TV : victoire (poule, 1er tour)</option><option value="annonce-qualifies.mp4">Vidéo TV : qualifiés (tableau final)</option><option value="annonce-finale.mp4">Vidéo TV : grande finale</option><option value="">Nom d’origine du fichier</option></select></div>
     <div class="row"><button class="btn" type="submit">Envoyer</button></div></form>
+    <form id="annForm" class="row" style="align-items:flex-end;margin:6px 0"><div class="field" style="flex:1;min-width:220px"><label for="annText">Texte des annonces TV</label><select id="annText"><option value="sous"${(settings.annText || 'sous') === 'sous' ? ' selected' : ''}>Sous la vidéo (le plus fluide)</option><option value="sur"${settings.annText === 'sur' ? ' selected' : ''}>Sur la vidéo</option></select></div><button class="btn sm" type="submit">Enregistrer</button></form>
+    <p class="muted small">Aperçu : <a href="suivi.html?demo=annonces&texte=sous" target="_blank" rel="noopener">texte sous la vidéo</a> · <a href="suivi.html?demo=annonces&texte=sur" target="_blank" rel="noopener">texte sur la vidéo</a>. Rechargez l’écran TV après un changement.</p>
     <p class="muted small">Annonces de l’écran TV : déposez les trois vidéos Flow avec le bon choix dans « Enregistrer sous » (MP4, 16:9). Sans vidéo, seul le texte s’affiche, sur fond noir. <a href="suivi.html?demo=annonces" target="_blank" rel="noopener">Voir un aperçu des trois annonces</a></p>
     <div id="assetList"><div class="empty">Chargement…</div></div></section>`;
 }
@@ -522,6 +524,7 @@ main.addEventListener('submit', async (e) => {
     toast(error ? 'Envoi impossible : ' + error.message : `${name} envoyé`); f.reset(); loadAssets();
   }
   if (f.id === 'accForm') { const { error } = await sb.rpc('create_staff_account', { p_login: v('accLogin'), p_password: $('#accPass').value }); if (error) return toast(clean(error.message)); toast('Identifiant ajouté'); f.reset(); loadAccounts(); }
+  if (f.id === 'annForm') { settings = { ...settings, annText: $('#annText').value }; const { error } = await sb.from('venues').update({ settings }).eq('id', 1); toast(error ? error.message : 'Réglage enregistré : rechargez l’écran TV'); }
   if (f.id === 'seasonForm') { const points = {}; ['part', 'win', 'p1', 'p2', 'p3', 'rec'].forEach((k) => { points[k] = Math.max(0, +v('pt' + k) || 0); }); const { error } = await sb.from('seasons').update({ points }).eq('id', seasons[0].id); toast(error ? error.message : 'Barème enregistré'); await reloadAll(); }
 });
 new MutationObserver(() => { if (tab === 'saison' && $('#recList')?.querySelector('.empty')) loadRecords(); }).observe(main, { childList: true });
