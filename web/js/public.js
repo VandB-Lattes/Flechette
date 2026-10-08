@@ -87,7 +87,7 @@ function form(full) {
   const lv = (id) => `<select id="${id}">${Object.entries(LEVELS).map(([k, v]) => `<option value="${k}"${k === (me[id] || 'occasionnel') ? ' selected' : ''}>${v}</option>`).join('')}</select>`;
   return `<form class="panel" id="regForm" novalidate><h2>Inscrire mon équipe</h2>${full ? '<div class="notice warn">Complet : votre équipe sera placée en liste d’attente et prévenue si une place se libère.</div>' : ''}
     ${me.team ? `<div class="notice good">Bon retour ! Votre équipe <b>${esc(me.team)}</b> et votre numéro sont repris : vos scores s’ajoutent à votre suivi (onglet « Mes scores »).</div>` : ''}
-    <div class="field"><label for="tName">Nom de l’équipe${me.team ? '' : ' (facultatif)'}</label><input id="tName" maxlength="30" autocomplete="off" value="${val('team')}"></div>
+    <div class="field"><label for="tName">Nom de l’équipe</label><input id="tName" maxlength="30" autocomplete="off" required placeholder="ex. Les Flèches" value="${val('team')}"></div>
     <div class="grid2"><div class="field"><label for="p1">Votre prénom ou pseudo</label><input id="p1" required maxlength="25" autocomplete="given-name" value="${val('p1')}"></div><div class="field"><label for="l1">Votre niveau</label>${lv('l1')}</div>
     <div class="field"><label for="p2">Prénom du coéquipier</label><input id="p2" maxlength="25" placeholder="Vide si vous venez seul" value="${val('p2')}"></div><div class="field"><label for="l2">Son niveau</label>${lv('l2')}</div></div>
     <div class="field"><label for="phone">Votre numéro de téléphone</label><input id="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" placeholder="06 12 34 56 78" required value="${val('phone')}"></div>
@@ -104,6 +104,7 @@ function bindForm() {
   f.addEventListener('submit', async (e) => {
     e.preventDefault(); const err = $('#regErr'); err.textContent = '';
     const v = (id) => $('#' + id).value.trim();
+    if (!v('tName')) return (err.textContent = 'Indiquez le nom de votre équipe.');
     if (!v('p1')) return (err.textContent = 'Indiquez votre prénom ou pseudo.');
     const digits = v('phone').replace(/\D/g, '').replace(/^33(?=[1-9]\d{8}$)/, '0');
     if (!/^0[1-9]\d{8}$/.test(digits) && !/^\d{9,15}$/.test(digits)) return (err.textContent = 'Indiquez votre numéro de téléphone (10 chiffres).');

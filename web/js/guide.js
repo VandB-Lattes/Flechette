@@ -10,12 +10,12 @@ export function guideHTML() {
 
   ${S('1. Les trois écrans', `
     <ul>
-      <li><b>Espace staff</b> (cet écran) : pour tout gérer. Il s’ouvre directement, sans identifiant ni code : sur la tablette en scannant le <b>QR code staff</b>, sur l’ordinateur avec le <b>lien staff</b> (tous deux dans l’onglet Réglages).</li>
+      <li><b>Espace staff</b> (cet écran) : pour tout gérer. On l’ouvre sur la tablette en scannant le <b>QR code staff</b>, ou sur l’ordinateur avec le <b>lien staff</b> (onglet Réglages), puis on se connecte avec l’<b>identifiant et le mot de passe</b> du staff. L’appareil reste ensuite connecté.</li>
       <li><b>Page joueurs</b> : ce que voient les clients sur leur téléphone. Ils s’y inscrivent, suivent le tableau et déclarent leurs résultats. Ils n’ont <b>aucun accès</b> à l’espace staff.</li>
       <li><b>Écran TV</b> : le tableau du tournoi en direct, à afficher sur la télé ou le projecteur. On n’y touche pas, il se met à jour tout seul.</li>
       <li><b>Écran comptoir</b> : une version simplifiée pour la tablette posée près des machines (inscription sur place, pointage, machines). Il n’affiche aucun bouton vers l’espace staff : pour en sortir, <b>restez appuyé 3 secondes sur l’heure</b> en haut à droite.</li>
     </ul>
-    <p class="muted small">L’adresse de l’espace staff n’apparaît nulle part côté joueurs. Ne l’affichez pas à la vue des clients : elle ouvre tout l’espace staff.</p>`, true)}
+    <p class="muted small">Les identifiants se gèrent dans <b>Réglages › Accès staff</b> : en ajouter un, changer un mot de passe, en supprimer un (les appareils qui l’utilisent sont alors déconnectés).</p>`, true)}
 
   ${S('2. Créer un concours', `
     <ol>
@@ -97,7 +97,7 @@ export function guideHTML() {
       <dt>Une équipe arrive après le tirage</dt><dd>Elle ne peut plus entrer dans le tableau. Proposez-lui le record de la semaine ou le prochain concours.</dd>
       <dt>Une seule machine marche</dt><dd>Réglages, « Machines de fléchettes » : mettez 1. Les matchs passeront un par un et l’heure de fin se recalcule.</dd>
       <dt>Le tournoi va dépasser la fermeture</dt><dd>Onglet Concours : jeu plus court pour la finale ou la consolante (par exemple 301 au lieu de Medley).</dd>
-      <dt>Ouvrir l’espace staff sur un nouvel appareil</dt><dd>Réglages › Accès staff : scannez le QR code (tablette, téléphone) ou ouvrez le lien (ordinateur).</dd>
+      <dt>Ouvrir l’espace staff sur un nouvel appareil</dt><dd>Réglages › Accès staff : scannez le QR code (tablette, téléphone) ou ouvrez le lien (ordinateur), puis connectez-vous avec l’identifiant et le mot de passe.</dd><dt>Mot de passe oublié</dt><dd>Sur un appareil encore connecté : Réglages › Accès staff › Changer le mot de passe.</dd>
       <dt>S’entraîner avant un vrai concours</dt><dd>Réglages › Concours de test : un faux concours avec 12 équipes pour tout essayer, puis « Effacer le concours de test ». La page test téléphone vérifie qu’un téléphone de joueur fonctionne.</dd>
       <dt>Les horaires du bar ont changé</dt><dd>Rien à faire : ils sont repris chaque matin de la fiche du magasin sur vandb.fr (bouton « Mettre à jour maintenant » dans Réglages).</dd>
     </dl>`)}

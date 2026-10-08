@@ -30,10 +30,12 @@ Le dépôt GitHub et GitHub Pages sont déjà en place. Il reste :
    - écrit la clé publique du projet dans `web/config.js` et publie le site.
 4. **Espace staff** : `https://VOTRE-COMPTE.github.io/VOTRE-DEPOT/staff.html`. Il s'ouvre directement ; son QR code est dans **Réglages › Accès staff**.
 
-## Accès du staff : direct, sans identifiant ni code
-- **Tablette ou téléphone** : scanner le **QR code staff** (Réglages › Accès staff). **Ordinateur** : ouvrir le lien `…/staff.html` (à mettre en favori).
-- L'espace staff s'ouvre directement. Aucun bouton n'y mène depuis les pages joueurs, l'écran TV ou l'écran comptoir.
-- Attention : toute personne qui connaît l'adresse `staff.html` accède à l'espace staff (concours, résultats, numéros de téléphone des joueurs). Ne l'affichez pas à la vue des clients.
+## Accès du staff : identifiant et mot de passe
+- **Premier identifiant** : juste après le déploiement, ouvrez `…/staff.html`. Tant qu'aucun identifiant n'existe, la page propose « Créer le premier accès staff » : choisissez l'identifiant et le mot de passe. Faites-le tout de suite, car la première personne qui ouvre la page le crée.
+- **Ensuite** : sur chaque appareil, QR code staff (tablette) ou lien (ordinateur), puis identifiant + mot de passe. L'appareil reste connecté jusqu'à « Se déconnecter ».
+- **Gestion** dans **Réglages › Accès staff** : ajouter un identifiant (un commun ou un par personne), changer un mot de passe, supprimer un identifiant (ses appareils sont déconnectés). Le dernier identifiant ne peut pas être supprimé.
+- Aucun e-mail : les mots de passe sont stockés chiffrés dans la base. Après 1 essai raté, la connexion attend 1 seconde.
+- Mot de passe oublié : changez-le depuis un appareil encore connecté.
 
 ## Les joueurs
 1. **Inscription** sur le téléphone : prénoms, niveaux, numéro de téléphone du capitaine. Le numéro n'est jamais affiché ; seul le staff le voit.
@@ -105,7 +107,7 @@ web/                           le site publié (aucune donnée stockée sur GitH
 
 ## Ce qui a été testé
 - Le schéma a été appliqué sur PostgreSQL 16. Testés :
-  - accès staff : ouverture directe de la page staff, actions staff refusées aux pages joueurs ;
+  - accès staff : premier identifiant, connexion, mauvais mot de passe refusé, déconnexion, gestion des identifiants, actions staff refusées aux pages joueurs ;
   - inscription par téléphone : numéro obligatoire, normalisé, une équipe par numéro ;
   - nom d'équipe repris avec le même numéro, refusé à un autre numéro, suivi « Mes scores » ;
   - liste d'attente : promotion, message « place libérée » et appel de la fonction `push` ;

@@ -12,33 +12,57 @@ const TABS = [['jourj', 'Jour J'], ['equipes', 'Équipes'], ['concours', 'Concou
 let venue, settings, events = [], seasons = [], contests = [], cid = sessionStorage.getItem('vb-cid'), tab = sessionStorage.getItem('vb-tab') || 'jourj';
 let regs = [], c = null, editing = null, confirmKey = null, pick = null, busy = false;
 
-/* ---------- accès direct : la page staff s'ouvre sans identifiant ni code ----------
-   À la première ouverture, l'appareil ouvre une session et s'enregistre comme appareil du staff. */
+/* ---------- connexion du staff : identifiant + mot de passe ----------
+   Une fois connecté, l'appareil le reste (jusqu'à « Se déconnecter »). Aucun e-mail. */
 let me = null;
 const deviceName = () => /iPad|Tablet|Android(?!.*Mobile)/i.test(navigator.userAgent) ? 'Tablette' : /Mobi|iPhone|Android/i.test(navigator.userAgent) ? 'Téléphone' : 'Ordinateur';
-async function boot() {
+const clean = (m) => String(m || '').replace(/^.*?: /, '');
+async function ensureSession() {
   let { data: { session } } = await sb.auth.getSession();
-  let hello = session ? (await sb.rpc('staff_hello')).data : null;
-  if (!hello) {
-    main.innerHTML = '<div class="empty">Ouverture de l’espace staff…</div>';
-    if (!session) {
-      const r = await sb.auth.signInAnonymously();
-      if (r.error) return failed('Connexion impossible : ' + r.error.message);
-      session = r.data?.session || (await sb.auth.getSession()).data.session;
-    }
-    const { error } = await sb.rpc('join_staff', { p_name: deviceName() });
-    if (error) return failed(error.message);
-    hello = (await sb.rpc('staff_hello')).data;
-    if (!hello) return failed('L’espace staff n’a pas pu s’ouvrir.');
+  if (!session) {
+    const r = await sb.auth.signInAnonymously();
+    if (r.error) throw new Error('Connexion impossible : ' + r.error.message);
+    session = r.data?.session || (await sb.auth.getSession()).data.session;
   }
+  return session;
+}
+async function boot() {
+  const { data: { session } } = await sb.auth.getSession();
+  const hello = session ? (await sb.rpc('staff_hello')).data : null;
+  if (!hello) return loginView();
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
   me = { ...hello, uid: session.user.id };
-  topbar.innerHTML = `<a class="btn ghost sm" href="comptoir.html" target="_blank" rel="noopener">Écran comptoir</a><a class="btn ghost sm" href="suivi.html" target="_blank" rel="noopener">Écran TV</a><a class="btn ghost sm" href="./" target="_blank" rel="noopener">Page joueurs</a><a class="btn ghost sm" href="test.html" target="_blank" rel="noopener">Page test téléphone</a>`;
+  topbar.innerHTML = `<span class="muted small">Connecté : <b>${esc(me.login)}</b></span><a class="btn ghost sm" href="comptoir.html" target="_blank" rel="noopener">Écran comptoir</a><a class="btn ghost sm" href="suivi.html" target="_blank" rel="noopener">Écran TV</a><a class="btn ghost sm" href="./" target="_blank" rel="noopener">Page joueurs</a><a class="btn ghost sm" href="test.html" target="_blank" rel="noopener">Page test téléphone</a><button class="btn ghost sm" id="logout">Se déconnecter</button>`;
+  $('#logout').onclick = async () => { await sb.rpc('staff_logout'); await sb.auth.signOut(); location.reload(); };
   venue = await loadVenue(); settings = venue.settings;
   await reloadAll();
   sb.channel('staff').on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, () => { if (!busy) reloadContest().then(render); })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => { if (!busy && !pick) reloadContest().then(render); }).subscribe();
   if (KIOSK) { try { await navigator.wakeLock?.request('screen'); } catch {} }
+}
+async function loginView() {
+  tabsEl.classList.add('hidden'); topbar.innerHTML = '';
+  const { data: first, error: e0 } = await sb.rpc('staff_setup_needed');
+  if (e0) return failed(clean(e0.message));
+  main.innerHTML = `<form class="panel" id="loginForm" style="max-width:460px"><h2>${first ? 'Créer le premier accès staff' : 'Connexion staff'}</h2>
+    <p class="muted">${first ? 'Aucun identifiant n’existe encore. Choisissez l’identifiant et le mot de passe du staff : ils serviront à ouvrir l’espace staff sur chaque appareil.' : 'Réservé au staff du bar. Une fois connecté, cet appareil le reste.'}</p>
+    <div class="field"><label for="lgLogin">Identifiant</label><input id="lgLogin" required autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="30" placeholder="ex. staff.lattes"></div>
+    <div class="field"><label for="lgPass">Mot de passe</label><input id="lgPass" type="password" required autocomplete="${first ? 'new-password' : 'current-password'}"${first ? ' minlength="6"' : ''}></div>
+    ${first ? '<div class="field"><label for="lgPass2">Mot de passe (à nouveau)</label><input id="lgPass2" type="password" required autocomplete="new-password"></div><p class="muted small">Identifiant : lettres sans accent, chiffres, point ou tiret (3 à 30). Mot de passe : 6 caractères minimum.</p>' : ''}
+    <div class="err" id="lgErr" role="alert"></div><button class="btn red xl" type="submit">${first ? 'Créer et se connecter' : 'Se connecter'}</button></form>`;
+  $('#loginForm').onsubmit = async (e) => {
+    e.preventDefault(); const btn = e.target.querySelector('button'), err = $('#lgErr'); err.textContent = '';
+    const login = $('#lgLogin').value.trim(), pass = $('#lgPass').value;
+    if (first && pass !== $('#lgPass2').value) { err.textContent = 'Les deux mots de passe ne sont pas identiques.'; return; }
+    btn.disabled = true;
+    try {
+      await ensureSession();
+      if (first) { const { error } = await sb.rpc('create_staff_account', { p_login: login, p_password: pass }); if (error) throw new Error(clean(error.message)); }
+      const { error } = await sb.rpc('staff_login', { p_login: login, p_password: pass, p_device: deviceName() });
+      if (error) throw new Error(clean(error.message));
+      toast('Connecté'); boot();
+    } catch (x) { err.textContent = x.message; btn.disabled = false; }
+  };
 }
 function failed(msg) {
   tabsEl.classList.add('hidden');
@@ -110,7 +134,7 @@ function render() {
   const views = { jourj: vJourJ, equipes: vEquipes, concours: vConcours, resultats: vResultats, saison: vSaison, com: vCom, reglages: vReglages, aide: guideHTML };
   main.innerHTML = (['reglages', 'saison', 'aide'].includes(tab) ? '' : pickerHtml) + ((!c && !['concours', 'reglages', 'saison', 'aide'].includes(tab)) ? '<div class="empty">Aucun concours. Créez-en un dans l’onglet Concours.</div>' : views[tab]());
   if (tab === 'com') drawQR();
-  if (tab === 'reglages') { loadAssets(); drawSettingsQR(); }
+  if (tab === 'reglages') { loadAssets(); drawSettingsQR(); loadAccounts(); }
 }
 tabsEl.addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) { tab = b.dataset.tab; confirmKey = null; pick = null; render(); } });
 main.addEventListener('input', (e) => { if (KIOSK && e.target.closest('#teamForm')) stashDraft(); });
@@ -339,10 +363,13 @@ function vReglages() {
   const sy = venue.settings?.syncedAt ? new Date(venue.settings.syncedAt).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : 'jamais';
   const link = staffLink(), testUrl = new URL('test.html', location.href).href;
   return `<div class="cols" style="margin-bottom:18px"><section class="panel"><h2>Accès staff</h2>
-    ${link ? `<p class="small"><b>Tablette ou téléphone :</b> scannez ce QR code avec l’appareil photo. <b>Ordinateur :</b> ouvrez le lien (à mettre en favori). L’espace staff s’ouvre directement, sans identifiant ni code.</p>
+    ${link ? `<p class="small"><b>Tablette ou téléphone :</b> scannez ce QR code avec l’appareil photo. <b>Ordinateur :</b> ouvrez le lien (à mettre en favori). Puis connectez-vous avec un identifiant ci-dessous.</p>
     <div class="row" style="align-items:flex-start;gap:16px"><div class="qrBox" id="staffQR" style="width:180px"></div><div class="stack" style="flex:1;min-width:200px"><span class="linkLine" id="staffLink">${esc(link)}</span>
     <div class="row"><button type="button" class="btn ghost sm" data-act="copy" data-src="staffLink">Copier le lien</button><button type="button" class="btn ghost sm" data-act="dlStaffQR">Télécharger le QR code</button></div>
-    <p class="muted small">Cette adresse n’apparaît nulle part côté joueurs. Ne l’affichez pas à la vue des clients : quiconque l’ouvre accède à l’espace staff.</p></div></div>` : ''}</section>
+    <p class="muted small">Cette adresse n’apparaît nulle part côté joueurs.</p></div></div>` : ''}
+    <h3 style="margin-top:14px">Identifiants staff</h3><div id="accList"><div class="empty">Chargement…</div></div>
+    <form id="accForm" class="grid2" style="margin-top:8px"><div class="field"><label for="accLogin">Nouvel identifiant</label><input id="accLogin" required autocapitalize="none" spellcheck="false" maxlength="30" placeholder="ex. julie"></div><div class="field"><label for="accPass">Mot de passe</label><input id="accPass" type="password" required minlength="6" autocomplete="new-password"></div><div class="row"><button class="btn sm" type="submit">Ajouter l’identifiant</button></div></form>
+    <p class="muted small">Un identifiant commun pour tout le staff suffit ; vous pouvez aussi en créer un par personne. Supprimer un identifiant déconnecte tous les appareils qui l’utilisent.</p></section>
     <section class="panel"><h2>Page test téléphone</h2><p class="small">Pour vérifier qu’un téléphone gère tout (connexion, direct, notifications, inscription, Mon match, Mes scores). Scannez avec le téléphone à tester :</p>
     <div class="row" style="align-items:flex-start;gap:16px"><div class="qrBox" id="testQR" style="width:150px"></div><div class="stack" style="flex:1;min-width:180px"><span class="linkLine">${esc(testUrl)}</span><p class="muted small">Créez d’abord le concours de test plus bas pour pouvoir faire le parcours complet.</p></div></div></section></div>`
     + vReglagesBase() + `<section class="panel" style="margin-top:18px"><h2>Concours de test</h2><p class="muted small">Crée un concours d’essai « (test) » avec 12 équipes (10 présentes) pour s’entraîner : tirage, machines, page joueurs (codes d’équipe 1001 à 1012) et écran TV. Il ne compte jamais dans le classement de la saison ; effacez-le après l’essai.</p>
@@ -354,6 +381,16 @@ function vReglages() {
     <div class="field"><label for="aName">Enregistrer sous</label><select id="aName"><option value="logo">Logo du bar (Flechettes/Images/logo.png, affiché en tête des pages)</option><option value="">Nom d’origine du fichier</option></select></div>
     <div class="row"><button class="btn" type="submit">Envoyer</button></div></form>
     <div id="assetList"><div class="empty">Chargement…</div></div></section>`;
+}
+async function loadAccounts() {
+  const el = $('#accList'); if (!el) return;
+  const { data, error } = await sb.rpc('list_staff_accounts');
+  if (error) { el.innerHTML = `<div class="notice bad">${esc(clean(error.message))}</div>`; return; }
+  const when = (d) => d ? new Date(d).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'jamais';
+  el.innerHTML = `<ul class="tlist">${(data || []).map((a) => `<li><span class="who"><b>${esc(a.login)}</b>${a.login === me.login ? ' <span class="pill ok">vous</span>' : ''}<br><span class="muted small">dernière connexion ${when(a.last_login)} · ${a.devices} appareil(s) connecté(s)</span></span>
+    ${confirmKey === 'pw:' + a.id ? `<input type="password" id="pw-${a.id}" placeholder="Nouveau mot de passe" minlength="6" style="max-width:180px"><button type="button" class="btn sm" data-act="setPw" data-id="${a.id}">Valider</button><button type="button" class="x" data-act="cancel">Annuler</button>`
+      : confirmKey === 'acc:' + a.id ? `<button type="button" class="btn red sm" data-act="delAcc" data-id="${a.id}">Confirmer la suppression</button><button type="button" class="x" data-act="cancel">Garder</button>`
+      : `<button type="button" class="x" data-act="ask" data-k="pw:${a.id}">Changer le mot de passe</button>${data.length > 1 ? `<button type="button" class="x" data-act="ask" data-k="acc:${a.id}">Supprimer</button>` : ''}`}</li>`).join('')}</ul>`;
 }
 function drawSettingsQR() {
   if (typeof QRCode === 'undefined') return setTimeout(drawSettingsQR, 300);
@@ -421,6 +458,8 @@ const A = {
     toast(`${k.label} : ${tname(c, k.winner)}`); await reloadContest(); render();
   },
   syncStore: async () => { toast('Lecture de vandb.fr…'); const { data, error } = await sb.functions.invoke('sync-store', { body: {} }); if (error || !data?.updated) { let m = data?.reason; try { m = m || (await error.context.json()).reason; } catch {} return toast('Mise à jour impossible : ' + (m || 'erreur')); } toast(data.changes.length ? 'Mis à jour : ' + data.changes.join(', ') : 'Déjà à jour'); venue = await loadVenue(); settings = venue.settings; render(); },
+  setPw: async (t) => { const v = ($('#pw-' + t.dataset.id)?.value || ''); const { error } = await sb.rpc('set_staff_password', { p_account: t.dataset.id, p_password: v }); if (error) return toast(clean(error.message)); confirmKey = null; toast('Mot de passe changé'); render(); },
+  delAcc: async (t) => { const { error } = await sb.rpc('delete_staff_account', { p_account: t.dataset.id }); if (error) return toast(clean(error.message)); confirmKey = null; if (t.dataset.id === me.account_id) { await sb.auth.signOut(); location.reload(); return; } toast('Identifiant supprimé'); render(); },
   dlStaffQR: () => { const img = $('#staffQR canvas') || $('#staffQR img'); if (!img) return; const a = document.createElement('a'); a.href = img.toDataURL ? img.toDataURL('image/png') : img.src; a.download = 'qr-staff-flechettes.png'; a.click(); },
   testCreate: async () => { const id = await rpcErr(sb.rpc('create_test_contest')); cid = id; toast('Concours de test prêt (12 équipes, codes 1001 à 1012)'); tab = 'jourj'; await reloadAll(); },
   testDelete: async () => { await rpcErr(sb.rpc('delete_test_contest')); if (cid === '7e570000-0000-4000-8000-000000000001') cid = null; toast('Concours de test effacé'); await reloadAll(); },
@@ -478,6 +517,7 @@ main.addEventListener('submit', async (e) => {
     const { error } = await sb.storage.from('assets').upload(name, file, { upsert: true, contentType: file.type, cacheControl: name === LOGO_PATH ? '300' : '86400' });
     toast(error ? 'Envoi impossible : ' + error.message : `${name} envoyé`); f.reset(); loadAssets();
   }
+  if (f.id === 'accForm') { const { error } = await sb.rpc('create_staff_account', { p_login: v('accLogin'), p_password: $('#accPass').value }); if (error) return toast(clean(error.message)); toast('Identifiant ajouté'); f.reset(); loadAccounts(); }
   if (f.id === 'seasonForm') { const points = {}; ['part', 'win', 'p1', 'p2', 'p3', 'rec'].forEach((k) => { points[k] = Math.max(0, +v('pt' + k) || 0); }); const { error } = await sb.from('seasons').update({ points }).eq('id', seasons[0].id); toast(error ? error.message : 'Barème enregistré'); await reloadAll(); }
 });
 new MutationObserver(() => { if (tab === 'saison' && $('#recList')?.querySelector('.empty')) loadRecords(); }).observe(main, { childList: true });
