@@ -67,6 +67,8 @@ export const ANN_CSS = `
 .ann .bd em{font-style:normal;color:#fff;background:#d9532b;padding:0 .25em;border-radius:.15em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
 /* « QUALIFIÉS ! » : nom de l'équipe gagnante en grand au centre de l'image (fixe : rien ne bouge pendant la vidéo) */
 .ann .win{grid-row:1;grid-column:1;place-self:center;z-index:3;max-width:86vw;padding:.12em .5em;border-radius:.18em;font:900 clamp(44px,8vw,170px)/1.05 var(--display);text-align:center;overflow-wrap:break-word;box-shadow:0 .08em .3em rgba(0,0,0,.45)}
+/* la vidéo et le nom partagent la même case : le nom se pose sur l'image au lieu de la pousser sur le côté */
+.ann.below video{grid-column:1}.ann.below .txt{grid-column:1}
 .ann.qualifies:not(.below) .txt{grid-row:1;grid-column:1;align-self:end;margin-bottom:5vh}
 .ann.qualifies:not(.below) .tt{font-size:clamp(28px,4.4vw,84px)}.ann.qualifies:not(.below) .bd{font-size:clamp(18px,2.3vw,44px)}
 .ann .brand{position:absolute;z-index:2;left:3vw;bottom:3vh;height:clamp(36px,5vw,90px);width:auto}
