@@ -3,6 +3,7 @@
 import { esc } from './util.js';
 import { NONE, finalMatch, poolTable } from './engine.js';
 import { tname } from './views.js';
+import { play } from './sons.js';
 import { ASSETS_URL, ASSETS_DIR } from '../config.js';
 
 export const VIDEOS = { victoire: 'annonce-victoire.mp4', qualifies: 'annonce-qualifies.mp4', finale: 'annonce-finale.mp4' };
@@ -163,6 +164,7 @@ export function createAnnouncer(logoUrl, onIdle, diag = false, textMode = () => 
     await new Promise((ok) => setTimeout(ok, 550));
     hideApp(true);
     await new Promise((ok) => requestAnimationFrame(() => requestAnimationFrame(ok)));
+    play(a.kind === 'finale' ? 'finale' : a.kind === 'poules' ? 'tada' : 'victoire');
     let len = DURATION[a.kind] || 10000;
     if (v) {
       try {
@@ -190,6 +192,7 @@ export function createAnnouncer(logoUrl, onIdle, diag = false, textMode = () => 
       <span class="go">À vous de jouer !</span>`;
     document.body.appendChild(el);
     requestAnimationFrame(() => el.classList.add('on'));
+    play('appel'); play('appel', 4.5, 0.7);   // carillon, répété une fois plus doucement
     await new Promise((ok) => setTimeout(ok, DURATION.appel));
     el.classList.remove('on');
     await new Promise((ok) => setTimeout(ok, 450));
@@ -206,6 +209,7 @@ export function createAnnouncer(logoUrl, onIdle, diag = false, textMode = () => 
     el.innerHTML = `<div><div class="big">${a.kind === 'finish' ? 'FINISH !' : '180'}</div><div class="who">${esc(a.name || '')}</div></div>`;
     document.body.appendChild(el);
     requestAnimationFrame(() => el.classList.add('on'));
+    play(a.kind === 'finish' ? 'finish' : '180');
     await new Promise((ok) => setTimeout(ok, DURATION[a.kind] || 8000));
     el.classList.remove('on');
     await new Promise((ok) => setTimeout(ok, 400));
@@ -224,8 +228,8 @@ export function createAnnouncer(logoUrl, onIdle, diag = false, textMode = () => 
     document.body.appendChild(el);
     requestAnimationFrame(() => el.classList.add('on'));
     const cd = el.querySelector('#drawCd');
-    for (const n of [3, 2, 1]) { cd.textContent = n; await new Promise((ok) => setTimeout(ok, 900)); }
-    cd.textContent = 'GO';
+    for (const n of [3, 2, 1]) { cd.textContent = n; play('tick'); await new Promise((ok) => setTimeout(ok, 900)); }
+    cd.textContent = 'GO'; play('go');
     await new Promise((ok) => setTimeout(ok, 700));
     cd.style.display = 'none';
     const slot = el.querySelector('#drawSlot');
@@ -238,14 +242,14 @@ export function createAnnouncer(logoUrl, onIdle, diag = false, textMode = () => 
     if (items.length > 8) list.classList.add('many');
     const step = Math.max(380, Math.min(1300, 9000 / Math.max(1, items.length)));
     for (const it of items) {
-      slot.innerHTML = it.big;
+      slot.innerHTML = it.big; play('pop');
       const sp = document.createElement('span');
       sp.innerHTML = it.small;
       list.appendChild(sp);
       requestAnimationFrame(() => sp.classList.add('in'));
       await new Promise((ok) => setTimeout(ok, step));
     }
-    slot.innerHTML = 'Tableau prêt 🎯';
+    slot.innerHTML = 'Tableau prêt 🎯'; play('tada');
     await new Promise((ok) => setTimeout(ok, 2200));
     el.classList.remove('on');
     await new Promise((ok) => setTimeout(ok, 400));
@@ -288,9 +292,9 @@ export function createAnnouncer(logoUrl, onIdle, diag = false, textMode = () => 
     document.body.appendChild(el);
     requestAnimationFrame(() => el.classList.add('on'));
     await new Promise((ok) => setTimeout(ok, 400));
-    whl.style.transform = `rotate(${finalDeg}deg)`;
+    whl.style.transform = `rotate(${finalDeg}deg)`; play('roue');
     await new Promise((ok) => setTimeout(ok, 4800));
-    el.querySelector('#whlWin').textContent = winner;
+    el.querySelector('#whlWin').textContent = winner; play('tada');
     await new Promise((ok) => setTimeout(ok, 3500));
     el.classList.remove('on');
     await new Promise((ok) => setTimeout(ok, 400));
@@ -318,9 +322,11 @@ export function createAnnouncer(logoUrl, onIdle, diag = false, textMode = () => 
     });
     document.body.appendChild(el);
     requestAnimationFrame(() => el.classList.add('on'));
+    play('roulement');
     await new Promise((ok) => setTimeout(ok, 500));
     for (const k of [...steps.children]) {
       k.classList.add('in');
+      play(k === steps.lastElementChild ? 'finale' : 'pop');
       await new Promise((ok) => setTimeout(ok, 900));
     }
     await new Promise((ok) => setTimeout(ok, 5000));

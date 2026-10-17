@@ -121,3 +121,9 @@ web/                           le site publié (aucune donnée stockée sur GitH
 - Le chiffrement Web Push a été vérifié en déchiffrant de façon indépendante des messages produits sous Node et sous Deno. Les fonctions passent la vérification de types Deno.
 - Les pages (staff, joueurs, Mes scores, page test) ont été parcourues dans Chromium avec une base simulée.
 - Pas encore vérifié sur le vrai projet Supabase. Faites un concours de test et une notification d'essai sur un Android et un iPhone avant la première vraie date.
+
+## Bruitages de l'écran TV
+
+Fichiers MP3 dans `web/sons/`, lus par la TV : `appel` (carillon de l'appel des équipes), `tick` et `go` (compte à rebours du tirage), `pop` (équipe placée), `tada` (révélation), `180`, `finish`, `victoire`, `finale` (finale et 1re place du podium), `roue` (roue des lots), `roulement` (podium).
+Sur la TV, toucher une fois **🔊 Activer le son** (souris ou télécommande) après l'ouverture de la page : les navigateurs bloquent le son sans ce geste. `suivi.html?son=0` : écran muet.
+Pour remplacer un son par le vôtre : Staff › Réglages › Fichiers du site, choisir « Son TV : … » dans « Enregistrer sous » (MP3). Rechargez l'écran TV ensuite.
