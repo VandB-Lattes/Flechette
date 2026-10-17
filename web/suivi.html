@@ -25,6 +25,9 @@ body{margin:0;border-top:0}
 .disp.tv .panel h3{font-size:clamp(17px,1.6vw,32px)}
 .disp.tv .panel p,.disp.tv .panel .row span{font-size:clamp(15px,1.35vw,27px)}
 .disp.tv .fact span{font-size:clamp(11px,.9vw,18px)}.disp.tv .fact b{font-size:clamp(18px,1.8vw,36px)}
+/* infos du concours en 2 colonnes sur la TV : « Élimination directe » ne déborde plus sur la colonne voisine */
+.disp.tv .facts{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 22px}
+.disp.tv .fact{min-width:0}.disp.tv .fact b{overflow-wrap:break-word;hyphens:auto}
 .disp.tv{gap:10px;padding:12px 20px}
 .tvhead{display:flex;justify-content:space-between;align-items:center;gap:16px;border-top:8px solid #1d1d1b;margin:-12px -20px 0;padding:10px 20px 8px;border-bottom:3px solid var(--yellow)}
 .tvbrand{display:flex;align-items:center;gap:14px}.tvbrand .logo{height:clamp(40px,4.6vw,78px);width:auto}
