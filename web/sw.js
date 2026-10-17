@@ -1,7 +1,7 @@
 // Service worker : l'application s'installe, les pages s'ouvrent même avec un Wi-Fi faible,
 // et les notifications (place libérée, match lancé) s'affichent même quand la page est fermée.
 // Les données (Supabase) passent toujours par le réseau.
-const CACHE = 'vb-flechettes-v38';
+const CACHE = 'vb-flechettes-v39';
 const ASSETS = ['./', 'index.html', 'staff.html', 'bar.html', 'gerer.html', 'comptoir.html', 'suivi.html', 'test.html', 'style.css', 'config.js', 'icon.svg', 'icon-192.png', 'manifest.webmanifest',
   'js/public.js', 'js/staff.js', 'js/engine.js', 'js/util.js', 'js/sb.js', 'js/views.js', 'js/games.js', 'js/art.js', 'js/assets.js', 'js/push.js', 'js/guide.js', 'js/flow.js', 'js/tvbracket.js', 'js/pwtoggle.js', 'js/annonces.js', 'js/tv-idle.js', 'js/sons.js', 'sons/appel.mp3', 'sons/tick.mp3', 'sons/go.mp3', 'sons/pop.mp3', 'sons/tada.mp3', 'sons/180.mp3', 'sons/finish.mp3', 'sons/victoire.mp3', 'sons/finale.mp3', 'sons/roue.mp3', 'sons/roulement.mp3', 'js/staff-tv.js', 'acces-staff.html'];
 
@@ -10,8 +10,8 @@ self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) =
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
-  // réseau d'abord, cache en secours
-  e.respondWith(fetch(e.request).then((r) => { const copy = r.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); return r; }).catch(() => caches.match(e.request, { ignoreSearch: true })));
+  // réseau d'abord (en redemandant toujours la dernière version au site, jamais une copie périmée), cache en secours
+  e.respondWith(fetch(e.request, { cache: 'no-cache' }).then((r) => { const copy = r.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); return r; }).catch(() => caches.match(e.request, { ignoreSearch: true })));
 });
 
 // Notification reçue du serveur (fonction Supabase « push »)
