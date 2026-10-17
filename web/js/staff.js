@@ -221,7 +221,12 @@ function vJourJ() {
     ${late ? `<div class="notice bad">Risque de dépasser la fermeture : passez la consolante en jeu de fête court ou la finale en ${esc(c.game)} (onglet Concours).</div>` : ''}</section>`;
   if (c.status === 'termine') o += '<div class="notice good">Concours terminé. Podium, lots et légende dans l’onglet Résultats.</div>';
   o += machineBlock();
-  if (c.status === 'en_cours') o += ceremonyPanelHTML();
+  if (c.status === 'en_cours') {
+    // prénoms des joueurs actuellement sur une machine : un appui suffit pour le 180
+    const onNow = E.lives(c).flatMap((m) => [m.a, m.b]).map((id) => regs.find((r) => r.id === id)?.teams).filter(Boolean)
+      .flatMap((t) => [t.captain?.first_name, t.mate?.first_name]).filter(Boolean);
+    o += ceremonyPanelHTML([...new Set(onNow)]);
+  }
   const done = c.matches.filter((m) => m.status === 'done' && !m.bye).sort((a, b) => String(b.played_at).localeCompare(String(a.played_at)));
   if (done.length) o += `<section class="panel"><h3>Derniers résultats</h3>${done.slice(0, 6).map((m) => `<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:6px 0"><span><b>${esc(tname(c, m.winner))}</b> bat ${esc(tname(c, m.loser))}${m.score ? ` (${esc(m.score)})` : ''}<br><span class="muted small">${esc(E.phaseLabel(c, m))}${m.reported_by === 'joueurs' ? ' · déclaré par les joueurs' : ''}</span></span>${E.canUndo(c, m) ? `<button class="x" data-act="undo" data-mid="${m.id}">Annuler</button>` : ''}</div>`).join('')}</section>`;
   if (c.pools && c.phase === 'pools') o += poolsHTML(c);
@@ -451,6 +456,7 @@ const A = {
     pick = null; E.resolve(c); E.autoFill(c, settings);
     persist('Victoire enregistrée');
   },
+  flashName: (t) => { const i = $('#flashName'); if (i) i.value = t.dataset.n; },
   flash180: () => ceremonyActions.flash180(toast),
   flashFinish: () => ceremonyActions.flashFinish(toast),
   undo: (t) => { const m = c.matches.find((x) => x.id === t.dataset.mid); if (!E.canUndo(c, m)) return; E.undo(c, m, settings); E.resolve(c); sb.from('results').delete().eq('contest_id', c.id).then(() => persist('Résultat annulé')); },

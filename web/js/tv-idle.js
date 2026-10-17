@@ -33,7 +33,9 @@ export function freeMachines(c, settings) {
   for (let k = 1; k <= N; k++) {
     if (!E.onMachine(c, k)) out.push(k);
   }
-  return out;
+  // une machine libre qui attend le prochain match n'est pas proposée pour le défi :
+  // les joueurs ne doivent pas l'occuper au moment où le staff lance la partie
+  return out.slice(E.launchable(c).length);
 }
 
 /** Y a-t-il un « temps mort » ? Au moins une machine libre et pas d'annonce en cours */

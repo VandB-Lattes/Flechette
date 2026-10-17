@@ -31,10 +31,12 @@ export function notifyFinish(name) {
 }
 
 /** Panneau 180 / Finish + score défi (onglet Ce soir, concours en cours) */
-export function ceremonyPanelHTML() {
+export function ceremonyPanelHTML(names = []) {
+  const esc = (x) => String(x).replace(/[&<>"']/g, (ch) => `&#${ch.charCodeAt(0)};`);
   return `<section class="panel">
     <h3>Moment fort (écran TV)</h3>
-    <p class="muted small">180 ou finish spectaculaire : plein écran sur la télé avec le prénom.</p>
+    <p class="muted small">180 ou finish spectaculaire : touchez le joueur, puis 180 ou Finish. Plein écran sur la télé avec son prénom.</p>
+    ${names.length ? `<div class="row" style="flex-wrap:wrap;gap:6px">${names.map((n) => `<button type="button" class="btn ghost sm" data-act="flashName" data-n="${esc(n)}">${esc(n)}</button>`).join('')}</div>` : ''}
     <div class="row">
       <div class="field" style="flex:1;min-width:160px"><label for="flashName">Prénom du joueur</label>
         <input id="flashName" maxlength="30" placeholder="ex. Léa" autocomplete="off"></div>

@@ -94,12 +94,16 @@ export const ANN_CSS = `
 .draw .list{display:flex;flex-wrap:wrap;gap:10px 18px;justify-content:center;max-width:90vw;margin-top:2vh}
 .draw .list span{font:700 clamp(14px,1.4vw,24px) var(--body);background:#2a2a28;padding:6px 14px;border-radius:8px;opacity:0;transform:translateY(12px);transition:opacity .35s,transform .35s}
 .draw .list span.in{opacity:1;transform:none}
-.wheel-wrap{position:fixed;inset:0;z-index:53;background:rgba(29,29,27,.94);color:#fff;display:grid;place-items:center;opacity:0;transition:opacity .4s}
+.draw .list span i{font-style:normal;color:#fbba00;font-weight:800;margin:0 .3em}
+.draw .list.many span{font-size:clamp(12px,1.05vw,19px);padding:4px 10px}
+.wheel-wrap{position:fixed;inset:0;z-index:53;background:#1d1d1b;color:#fff;display:grid;place-items:center;opacity:0;transition:opacity .4s}
 .wheel-wrap.on{opacity:1}
 .wheel-wrap .box{text-align:center}
 .wheel-wrap h2{font:900 clamp(28px,4vw,64px) var(--display);color:#fbba00;margin:0 0 2vh}
 .wheel{width:min(70vw,420px);height:min(70vw,420px);border-radius:50%;border:8px solid #fbba00;position:relative;overflow:hidden;margin:0 auto;transition:transform 4.5s cubic-bezier(.12,.75,.08,1)}
-.wheel .seg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:800 clamp(11px,1.3vw,18px) var(--body);padding:8%}
+.wheel{--wr:min(70vw,420px)}
+.wheel .seg{position:absolute;inset:0;font:800 clamp(11px,1.3vw,18px) var(--body)}
+.wheel .seg span{position:absolute;left:50%;top:50%;max-width:calc(var(--wr) * .34);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;text-shadow:0 1px 2px rgba(0,0,0,.6)}
 .wheel-wrap .pin{width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:28px solid #d9532b;margin:0 auto 8px}
 .wheel-wrap .winner{font:900 clamp(32px,5vw,80px) var(--display);margin-top:3vh;min-height:1.2em}
 .pod{position:fixed;inset:0;z-index:54;background:#1d1d1b;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2vh;opacity:0;transition:opacity .5s}
@@ -226,15 +230,20 @@ export function createAnnouncer(logoUrl, onIdle, diag = false, textMode = () => 
     cd.style.display = 'none';
     const slot = el.querySelector('#drawSlot');
     const list = el.querySelector('#drawList');
-    const teams = a.teams || [];
-    for (let i = 0; i < teams.length; i++) {
-      const name = teams[i];
-      slot.innerHTML = `<em>${esc(name)}</em>`;
+    // a.pairs : affiches du 1er tour [[A, B], …] ou poules [{ g: 'A', names: […] }] ; a.teams : simple liste de noms
+    const items = (a.pairs || []).map((x) => Array.isArray(x)
+      ? { big: `<em>${esc(x[0])}</em> contre <em>${esc(x[1])}</em>`, small: `${esc(x[0])} <i>vs</i> ${esc(x[1])}` }
+      : { big: `Poule ${esc(x.g)} : ${x.names.map((n) => `<em>${esc(n)}</em>`).join(' · ')}`, small: `<b>Poule ${esc(x.g)}</b> ${x.names.map(esc).join(' · ')}` });
+    if (!items.length) (a.teams || []).forEach((n) => items.push({ big: `<em>${esc(n)}</em>`, small: esc(n) }));
+    if (items.length > 8) list.classList.add('many');
+    const step = Math.max(380, Math.min(1300, 9000 / Math.max(1, items.length)));
+    for (const it of items) {
+      slot.innerHTML = it.big;
       const sp = document.createElement('span');
-      sp.textContent = name;
+      sp.innerHTML = it.small;
       list.appendChild(sp);
       requestAnimationFrame(() => sp.classList.add('in'));
-      await new Promise((ok) => setTimeout(ok, Math.max(350, 900 - i * 25)));
+      await new Promise((ok) => setTimeout(ok, step));
     }
     slot.innerHTML = 'Tableau prêt 🎯';
     await new Promise((ok) => setTimeout(ok, 2200));
@@ -251,9 +260,12 @@ export function createAnnouncer(logoUrl, onIdle, diag = false, textMode = () => 
     hideApp(true);
     const names = a.names || [];
     const winner = a.winner || names[0] || '—';
-    const n = Math.max(names.length, 6);
+    let pool = names.filter(Boolean).slice(0, 16);
+    if (!pool.includes(winner)) pool = [winner, ...pool.slice(0, 15)];
+    pool = pool.sort(() => Math.random() - 0.5);
+    const n = Math.max(pool.length, 6);
     const segs = [];
-    for (let i = 0; i < n; i++) segs.push(names[i % names.length] || '·');
+    for (let i = 0; i < n; i++) segs.push(pool[i % pool.length] || '·');
     const winIdx = Math.max(0, segs.indexOf(winner));
     const segAngle = 360 / n;
     const finalDeg = 360 * 5 + (360 - (winIdx * segAngle + segAngle / 2));
@@ -266,8 +278,11 @@ export function createAnnouncer(logoUrl, onIdle, diag = false, textMode = () => 
       const s = document.createElement('div');
       s.className = 'seg';
       s.style.background = colors[i % colors.length];
-      s.style.clipPath = `polygon(50% 50%, ${50 + 50 * Math.cos((i * segAngle - 90) * Math.PI / 180)}% ${50 + 50 * Math.sin((i * segAngle - 90) * Math.PI / 180)}%, ${50 + 50 * Math.cos(((i + 1) * segAngle - 90) * Math.PI / 180)}% ${50 + 50 * Math.sin(((i + 1) * segAngle - 90) * Math.PI / 180)}%)`;
-      s.textContent = name.length > 14 ? name.slice(0, 12) + '…' : name;
+      s.style.clipPath = `polygon(50% 50%, ${50 + 75 * Math.cos((i * segAngle - 90) * Math.PI / 180)}% ${50 + 75 * Math.sin((i * segAngle - 90) * Math.PI / 180)}%, ${50 + 75 * Math.cos(((i + 1) * segAngle - 90) * Math.PI / 180)}% ${50 + 75 * Math.sin(((i + 1) * segAngle - 90) * Math.PI / 180)}%)`;
+      const lb = document.createElement('span');
+      lb.textContent = name.length > 14 ? name.slice(0, 12) + '…' : name;
+      lb.style.transform = `translate(-50%,-50%) rotate(${(i + 0.5) * segAngle - 90}deg) translateX(calc(var(--wr) * .27))`;
+      s.appendChild(lb);
       whl.appendChild(s);
     });
     document.body.appendChild(el);
@@ -334,7 +349,7 @@ export function createAnnouncer(logoUrl, onIdle, diag = false, textMode = () => 
     push(a) { if (busy) queue.push(a); else run(a); },
     pushAppel(machine, aName, bName) { this.push({ type: 'appel', machine, a: aName, b: bName }); },
     pushFlash(kind, name) { this.push({ type: 'flash', kind: kind === 'finish' ? 'finish' : 'oneeighty', name }); },
-    pushTirage(teams) { this.push({ type: 'tirage', teams }); },
+    pushTirage(list) { const l = list || []; this.push(l.some((x) => typeof x !== 'string') ? { type: 'tirage', pairs: l } : { type: 'tirage', teams: l }); },
     pushRoue(label, names, winner) { this.push({ type: 'roue', label, names, winner }); },
     pushPodium(places) { this.push({ type: 'podium', places }); },
     get busy() { return busy || queue.length > 0; },
