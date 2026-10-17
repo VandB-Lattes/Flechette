@@ -7,6 +7,7 @@ import { guideHTML, GUIDE_CSS } from './guide.js';
 import { nextStep, stepTab, flowHTML, FLOW_CSS } from './flow.js';
 document.head.insertAdjacentHTML('beforeend', `<style>${GUIDE_CSS}${FLOW_CSS}</style>`);
 import { card, bracketHTML, poolsHTML, tname } from './views.js';
+import { ceremonyPanelHTML, ceremonyActions, submitQuickRecord, notifyTirage, notifyRoue } from './staff-tv.js';
 import { $, esc, fmtDate, hhmm, hm, fmtHM, fmtDur, nowMin, today, addDays, weekMonday, LEVELS, STATUS, GAMES, PARTY, MENTION, pill, contestStatus, toast, slotChecks, notices, closedReason, hoursOf, copyText } from './util.js';
 
 const main = $('#main'), tabsEl = $('#tabs'), topbar = $('#topbar');
@@ -220,6 +221,7 @@ function vJourJ() {
     ${late ? `<div class="notice bad">Risque de dépasser la fermeture : passez la consolante en jeu de fête court ou la finale en ${esc(c.game)} (onglet Concours).</div>` : ''}</section>`;
   if (c.status === 'termine') o += '<div class="notice good">Concours terminé. Podium, lots et légende dans l’onglet Résultats.</div>';
   o += machineBlock();
+  if (c.status === 'en_cours') o += ceremonyPanelHTML();
   const done = c.matches.filter((m) => m.status === 'done' && !m.bye).sort((a, b) => String(b.played_at).localeCompare(String(a.played_at)));
   if (done.length) o += `<section class="panel"><h3>Derniers résultats</h3>${done.slice(0, 6).map((m) => `<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding:6px 0"><span><b>${esc(tname(c, m.winner))}</b> bat ${esc(tname(c, m.loser))}${m.score ? ` (${esc(m.score)})` : ''}<br><span class="muted small">${esc(E.phaseLabel(c, m))}${m.reported_by === 'joueurs' ? ' · déclaré par les joueurs' : ''}</span></span>${E.canUndo(c, m) ? `<button class="x" data-act="undo" data-mid="${m.id}">Annuler</button>` : ''}</div>`).join('')}</section>`;
   if (c.pools && c.phase === 'pools') o += poolsHTML(c);
@@ -435,6 +437,7 @@ const A = {
     E.draw(c, present); confirmKey = null; busy = true;
     await sb.from('matches').delete().eq('contest_id', c.id);
     await persist('Tirage effectué');
+    notifyTirage(confirmed().filter((r) => r.present).map((r) => r.teams.name));
     await sb.from('contests').update({ started_at: new Date().toISOString() }).eq('id', c.id);
   },
   finalDraw: () => { E.buildFinalFromPools(c); persist('Tableau final généré'); },
@@ -448,6 +451,8 @@ const A = {
     pick = null; E.resolve(c); E.autoFill(c, settings);
     persist('Victoire enregistrée');
   },
+  flash180: () => ceremonyActions.flash180(toast),
+  flashFinish: () => ceremonyActions.flashFinish(toast),
   undo: (t) => { const m = c.matches.find((x) => x.id === t.dataset.mid); if (!E.canUndo(c, m)) return; E.undo(c, m, settings); E.resolve(c); sb.from('results').delete().eq('contest_id', c.id).then(() => persist('Résultat annulé')); },
   cancelReg: async (t) => {
     const r = regs.find((x) => x.id === t.dataset.id);
@@ -474,7 +479,9 @@ const A = {
     const pool = regs.filter((r) => r.status === 'confirmee' && r.present && !excl.has(r.id)); if (!k || !pool.length) return;
     k.winner = pool[Math.floor(Math.random() * pool.length)].id;
     const { error } = await sb.from('contests').update({ prizes: { ...c.prizes, conso } }).eq('id', c.id); if (error) return toast(error.message);
-    toast(`${k.label} : ${tname(c, k.winner)}`); await reloadContest(); render();
+    toast(`${k.label} : ${tname(c, k.winner)}`);
+    notifyRoue(k.label, pool.map((r) => r.teams.name), tname(c, k.winner));
+    await reloadContest(); render();
   },
   syncStore: async () => { toast('Lecture de vandb.fr…'); const { data, error } = await sb.functions.invoke('sync-store', { body: {} }); if (error || !data?.updated) { let m = data?.reason; try { m = m || (await error.context.json()).reason; } catch {} return toast('Mise à jour impossible : ' + (m || 'erreur')); } toast(data.changes.length ? 'Mis à jour : ' + data.changes.join(', ') : 'Déjà à jour'); venue = await loadVenue(); settings = venue.settings; render(); },
   setPw: async (t) => { const v = ($('#pw-' + t.dataset.id)?.value || ''); const { error } = await sb.rpc('set_staff_password', { p_account: t.dataset.id, p_password: v }); if (error) return toast(clean(error.message)); confirmKey = null; toast('Mot de passe changé'); render(); },
@@ -517,6 +524,7 @@ main.addEventListener('submit', async (e) => {
     const file = $('#photo').files[0]; if (!file) return toast('Choisissez une photo'); if (!$('#photoOk').checked) return toast('L’accord des personnes est nécessaire');
     try { const url = await upload(file, `podium/${c.id}-${Date.now()}.jpg`); await sb.from('contests').update({ podium_photo_url: url }).eq('id', c.id); toast('Photo publiée'); await reloadContest(); render(); } catch (err) { toast('Envoi impossible : ' + err.message); }
   }
+  if (f.id === 'quickRec') { await submitQuickRecord(toast); return; }
   if (f.id === 'recForm') {
     let photo_url = null; const file = $('#rPhoto').files[0];
     try { if (file) photo_url = await upload(file, `records/${weekMonday()}-${Date.now()}.jpg`); } catch { toast('Photo non envoyée, score enregistré quand même'); }

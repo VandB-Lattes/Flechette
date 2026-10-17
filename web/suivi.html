@@ -69,8 +69,9 @@ import { $, esc, fmtDate, hhmm, hm, fmtHM, nowMin, today, weekMonday, hoursOf, c
 import * as E from './js/engine.js';
 import { poolsHTML, tname } from './js/views.js';
 import { mirrorBracket, matchCard, TV_CSS } from './js/tvbracket.js';
-import { createAnnouncer, detect, kindOf, texts, ANN_CSS } from './js/annonces.js';
-document.head.insertAdjacentHTML('beforeend', `<style>${TV_CSS}${PAGE_CSS}${ANN_CSS}</style>`);
+import { createAnnouncer, detect, detectLive, kindOf, texts, ANN_CSS } from './js/annonces.js';
+import { challengeCardHTML, recordsPanelHTML, isIdle, idleSideHTML, splitRecords, bestOf, IDLE_CSS } from './js/tv-idle.js';
+document.head.insertAdjacentHTML('beforeend', `<style>${TV_CSS}${PAGE_CSS}${ANN_CSS}${IDLE_CSS}</style>`);
 
 const app = $('#app');
 let view = 0, views = [];
@@ -111,8 +112,7 @@ function preDraw() {
   const col1 = `<section class="panel dcol"><div class="row" style="justify-content:space-between"><h2>Équipes</h2>${pages > 1 ? `<span class="muted num">${pg + 1}/${pages}</span>` : ''}</div>
     ${teams.length ? `<ul class="dteams">${teams.slice(pg * per, pg * per + per).map((t, i) => { const s = teamState(t); return `<li><span class="n num">${pg * per + i + 1}</span><span class="who"><b>${esc(t.team_name)}</b><small>${esc(t.captain_name)}${t.mate_name ? ' &amp; ' + esc(t.mate_name) : ' · solo'}</small></span><span class="dst ${s.k}">${s.l}</span></li>`; }).join('')}</ul>` : '<div class="empty">Aucune équipe inscrite pour l’instant.</div>'}</section>`;
   const col2 = `<section class="panel dcol"><h2>Avant le tirage</h2><div class="facts"><div class="fact"><span>Format</span><b>${c.format === 'poules' ? 'Poules + tableau' : 'Élimination directe'}</b></div><div class="fact"><span>Jeu</span><b>${esc(c.game)}</b></div><div class="fact"><span>Finale</span><b>${esc(c.final_game)}</b></div><div class="fact"><span>Machines</span><b>${N}</b></div></div><p class="muted">Inscription sur votre téléphone ou au comptoir jusqu’à ${hhmm(c.deadline_time).replace(':', 'h')}. Le tableau s’affichera ici au tirage au sort.</p></section>`;
-  const best = (g) => records.find((r) => r.game === g);
-  const col3 = `<section class="panel"><h3>Record de la semaine</h3>${['Count-Up', 'Big Bull'].map((g) => `<div class="row" style="justify-content:space-between"><span><b>${g}</b> · ${best(g) ? esc(best(g).player_name) : 'à battre'}</span><span class="clock" style="font-size:30px">${best(g)?.score ?? '–'}</span></div>`).join('')}</section>`;
+  const col3 = recordsPanelHTML(records, today(), { title: 'Record de la semaine' });
   return `<div class="dgrid"><div class="stack">${col1}</div><div class="stack">${col2}</div><div class="stack d3">${col3}</div></div>`;
 }
 
@@ -132,9 +132,13 @@ function strip() {
     return `<div class="tvstrip"><div class="tvpod">${[0, 1, 2].map((i) => pd[i] ? `<div class="pd pd${i + 1}"><span class="medal m${i + 1}">${i + 1}</span><b>${esc(tname(c, pd[i]))}</b><small>${esc(c.prizes?.podium?.[i] || '')}</small></div>` : '').join('')}${cw ? `<div class="pd"><span class="medal" style="background:var(--teal);color:#fff">C</span><b>${esc(tname(c, cw))}</b><small>Consolante</small></div>` : ''}</div></div>`;
   }
   const N = E.machines(settings);
+  const { week, evening } = splitRecords(records, today());
+  const eCU = bestOf(evening, 'Count-Up'), wCU = bestOf(week, 'Count-Up');
   let mach = '';
   for (let k = 1; k <= N; k++) { const lv = E.onMachine(c, k);
-    mach += `<div class="tvm${lv ? ' on' : ''}"><div class="tvmh"><b>Machine ${k}</b><span>${lv ? since(lv.live_at) : 'libre'}</span></div>${lv ? `<div class="tvvs"><b>${esc(tname(c, lv.a))}</b><i>vs</i><b>${esc(tname(c, lv.b))}</b></div><small>${esc(E.phaseLabel(c, lv))} · ${esc(E.gameFor(c, lv))}</small>` : '<small>En attente du prochain match</small>'}</div>`; }
+    if (lv) mach += `<div class="tvm on"><div class="tvmh"><b>Machine ${k}</b><span>${since(lv.live_at)}</span></div><div class="tvvs"><b>${esc(tname(c, lv.a))}</b><i>vs</i><b>${esc(tname(c, lv.b))}</b></div><small>${esc(E.phaseLabel(c, lv))} · ${esc(E.gameFor(c, lv))}</small></div>`;
+    else mach += challengeCardHTML(k, eCU, wCU);
+  }
   const nx = E.launchable(c).concat(E.waitingMatches(c)).slice(0, 3);
   const last = c.matches.filter((m) => m.status === 'done' && !m.bye).sort((a, b) => String(b.played_at).localeCompare(String(a.played_at))).slice(0, 3);
   return `<div class="tvstrip">${mach}
@@ -148,6 +152,7 @@ function computeViews() {
   if (c.matches.some((m) => m.ph === 'main')) v.push(['main', 'Tableau principal']);
   const conso = c.matches.filter((m) => m.ph === 'conso' && !m.bye);
   if (conso.length) v.push(['conso', 'Consolante']);
+  if (c.status === 'en_cours' && isIdle(c, settings)) v.push(['idle', 'Défis & records']);
   return v;
 }
 
@@ -175,7 +180,8 @@ function render() {
     const [k, label] = views[view % views.length] || ['main', 'Tableau'];
     title = c.status === 'termine' ? 'Résultats' : 'En direct';
     const dots = views.length > 1 ? `<div class="tvdots">${views.map((x, i) => `<span class="${i === view % views.length ? 'on' : ''}">${esc(x[1])}</span>`).join('')}</div>` : '';
-    body = `<div class="tvmain"><div class="tvviewhead"><h2>${esc(label)}</h2>${dots}</div>${k === 'pools' ? poolsView() : mirrorBracket(c, k)}</div>${strip()}`;
+    const inner = k === 'pools' ? poolsView() : k === 'idle' ? idleSideHTML(c, settings, records, today()) : mirrorBracket(c, k);
+    body = `<div class="tvmain"><div class="tvviewhead"><h2>${esc(label)}</h2>${dots}</div>${inner}</div>${strip()}`;
   }
   app.innerHTML = `<div class="disp tv">${header(c, title)}${body}<p class="legal" style="margin:0">Concours réservé aux majeurs. L’abus d’alcool est dangereux pour la santé, à consommer avec modération.</p></div>`;
   drawQR();
@@ -191,9 +197,27 @@ async function load() {
   const [full, { data: rec }] = await Promise.all([loadContestFull(pick.id), sb.from('records').select('*').eq('week_start', weekMonday()).order('score', { ascending: false })]);
   // annonces : matchs qui viennent de se terminer depuis le dernier chargement
   if (full) {
+    if (prevMatches) prevMatches.phase = prevPhase;
     const anns = prevContest === full.id ? detect(full, prevMatches, machineOf) : [];
     full.matches.forEach((m) => { if (m.status === 'live' && m.machine) machineOf.set(m.id, m.machine); });
-    prevMatches = new Map(full.matches.map((m) => [m.id, { status: m.status, machine: m.machine }])); prevContest = full.id;
+    const livesNew = prevContest === full.id ? detectLive(full, prevMatches) : [];
+    livesNew.forEach((x) => announcer.pushAppel(x.machine, x.a, x.b));
+    if (prevStatus === 'ouvert' && full.status === 'en_cours' && full.matches.length && !drewCeremony) {
+      drewCeremony = true;
+      const names = full.teams.map((t) => t.name || t.team_name).filter(Boolean);
+      if (names.length) announcer.pushTirage(names);
+    }
+    if (prevStatus === 'en_cours' && full.status === 'termine' && !podiumShown) {
+      podiumShown = true;
+      const pd = E.podium(full);
+      const places = [0, 1, 2].map((i) => pd[i] ? { place: i + 1, name: tname(full, pd[i]) } : null).filter(Boolean);
+      if (places.length) announcer.pushPodium(places);
+    }
+    if (full.id !== prevContest) { drewCeremony = false; podiumShown = false; }
+    prevMatches = new Map(full.matches.map((m) => [m.id, { status: m.status, machine: m.machine }]));
+    prevPhase = full.phase;
+    prevStatus = full.status;
+    prevContest = full.id;
     anns.forEach((a) => announcer.push(a));
   }
   c = full; records = rec || []; render();
@@ -207,10 +231,16 @@ function subscribe(id) {
 }
 function soon() { clearTimeout(timer); timer = setTimeout(load, 400); }
 
-let prevMatches = null, prevContest = null; const machineOf = new Map();
+let prevMatches = null, prevContest = null, prevPhase = null, prevStatus = null, drewCeremony = false, podiumShown = false; const machineOf = new Map();
 const QS = new URLSearchParams(location.search);
 // texte des annonces : « sous » la vidéo (par défaut, le plus fluide) ou « sur » la vidéo ; réglage dans Staff › Réglages
 const announcer = createAnnouncer(`${ASSETS_URL}/${LOGO_PATH}`, () => render(), QS.get('demo') === 'annonces', () => QS.get('texte') || settings?.annText || 'sous');
+sb.channel('tv-flash').on('broadcast', { event: 'ceremony' }, ({ payload }) => {
+  if (!payload?.kind) return;
+  if (payload.kind === '180' || payload.kind === 'finish') announcer.pushFlash(payload.kind, payload.name || '');
+  else if (payload.kind === 'roue') announcer.pushRoue(payload.label, payload.names || [], payload.winner);
+  else if (payload.kind === 'tirage') { if (drewCeremony) return; drewCeremony = true; announcer.pushTirage(payload.teams || []); }
+}).subscribe();
 venue = await loadVenue(); settings = venue.settings;
 // Aperçu des trois annonces : suivi.html?demo=annonces
 if (new URLSearchParams(location.search).get('demo') === 'annonces') {
