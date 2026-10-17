@@ -38,7 +38,7 @@ export function texts(c, m, kind, machine) {
   const W = w.html, L = l.html;
   if (kind === 'finale') return { title: 'CHAMPIONS DU V and B !', body: `Victoire éclatante de ${W} !<br>Félicitations aux nouveaux rois de la cible ! 🏆🎯` };
   if (kind === 'consolante') return { title: 'VAINQUEUR DE LA CONSOLANTE !', body: `${W} remporte la consolante !<br>${L}, merci pour le spectacle !` };
-  if (kind === 'qualifies') return { title: 'QUALIFIÉS !', body: `${W} s’impose et continue sa course !<br>${L}, merci pour ce beau match !` };
+  if (kind === 'qualifies') return { win: { name: tname(c, m.winner), bg: TEAM_COLORS[w.i][0], fg: TEAM_COLORS[w.i][1] }, title: 'QUALIFIÉS !', body: `${W} s’impose et continue sa course !<br>${L}, merci pour ce beau match !` };
   return { title: 'VICTOIRE !', body: `${W} décroche la victoire${machine ? ` sur la Machine ${machine}` : ''} !<br>Un pas de plus vers les phases finales.` };
 }
 
@@ -65,6 +65,10 @@ export const ANN_CSS = `
 .ann .tt{font:900 clamp(40px,8vw,150px)/1 var(--display);letter-spacing:.01em;color:#fbba00;margin:0 0 .25em}
 .ann .bd{font:800 clamp(22px,3.1vw,58px)/1.25 var(--body)}
 .ann .bd em{font-style:normal;color:#fff;background:#d9532b;padding:0 .25em;border-radius:.15em;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+/* « QUALIFIÉS ! » : nom de l'équipe gagnante en grand au centre de l'image (fixe : rien ne bouge pendant la vidéo) */
+.ann .win{grid-row:1;grid-column:1;place-self:center;z-index:3;max-width:86vw;padding:.12em .5em;border-radius:.18em;font:900 clamp(44px,8vw,170px)/1.05 var(--display);text-align:center;overflow-wrap:break-word;box-shadow:0 .08em .3em rgba(0,0,0,.45)}
+.ann.qualifies:not(.below) .txt{grid-row:1;grid-column:1;align-self:end;margin-bottom:5vh}
+.ann.qualifies:not(.below) .tt{font-size:clamp(28px,4.4vw,84px)}.ann.qualifies:not(.below) .bd{font-size:clamp(18px,2.3vw,44px)}
 .ann .brand{position:absolute;z-index:2;left:3vw;bottom:3vh;height:clamp(36px,5vw,90px);width:auto}
 .ann .bar{position:absolute;z-index:3;left:0;right:0;bottom:0;height:8px;background:#fbba00;transform-origin:left;transform:scaleX(0);animation:annBar linear forwards}
 .ann .diag{position:absolute;z-index:4;right:1vw;top:2vh;font:700 14px var(--body);background:#000;color:#fff;padding:6px 10px;border-radius:6px}
@@ -154,7 +158,7 @@ export function createAnnouncer(logoUrl, onIdle, diag = false, textMode = () => 
     busy = true;
     const el = document.createElement('div');
     el.className = `ann ${a.kind}${textMode() === 'sur' ? '' : ' below'}`;
-    el.innerHTML = `<div class="txt"><div class="tt">${a.title}</div><div class="bd">${a.body}</div></div>
+    el.innerHTML = `${a.win ? `<div class="win" style="background:${a.win.bg};color:${a.win.fg}">${esc(a.win.name)}</div>` : ''}<div class="txt"><div class="tt">${a.title}</div><div class="bd">${a.body}</div></div>
       ${logoUrl ? `<img class="brand" src="${logoUrl}" alt="" onerror="this.remove()">` : ''}<div class="bar" style="animation-duration:${DURATION[a.kind] || 10000}ms"></div>`;
     const vKey = VIDEOS[a.kind] ? a.kind : (a.kind === 'consolante' || a.kind === 'poules' ? 'qualifies' : null);
     const v = vKey ? players[vKey] : null;

@@ -14,7 +14,8 @@ async function fetchAudio(url) {
   return r.arrayBuffer();
 }
 /** Télécharge et décode tous les sons une fois pour toutes : ils partent sans délai au bon moment */
-export async function load() {
+export function load() { ready = loadAll(); return ready; }
+async function loadAll() {
   try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); } catch { return; }
   await Promise.all(SONS.map(async (k) => {
     let data = null;
@@ -23,7 +24,15 @@ export async function load() {
   }));
 }
 /** À appeler lors d'un appui (souris, télécommande) : le navigateur autorise alors le son */
-export function unlock() { try { ctx?.resume(); } catch {} on = true; }
+export async function unlock() {
+  try { ctx = ctx || new (window.AudioContext || window.webkitAudioContext)(); } catch { return false; }
+  // resume() n'aboutit que pendant un vrai geste (clic, touche, fin d'appui tactile) : on vérifie que le son tourne vraiment
+  try { await Promise.race([ctx.resume(), new Promise((ok) => setTimeout(ok, 400))]); } catch { /* refusé */ }
+  on = ctx.state === 'running';
+  return on;
+}
+export const state = () => ctx?.state || 'absent';
+export let ready = Promise.resolve();
 export const enabled = () => on;
 /** Joue un son, éventuellement avec un délai en secondes */
 export function play(k, delay = 0, volume = 1) {
