@@ -5,11 +5,13 @@ export function guideHTML() {
   return `<div class="stack">
   <section class="panel"><h2>Mode d’emploi</h2>
     <p>Tout ce qu’il faut pour organiser un concours de fléchettes au bar : le créer, inscrire les équipes, faire tourner les machines et afficher les scores sur la télé. Touchez un titre pour l’ouvrir.</p>
+    <div class="notice good"><b>En cas de doute, suivez le bandeau jaune.</b> En haut de chaque écran, l’application affiche l’étape en cours (1 Inscriptions, 2 Pointage, 3 Tirage, 4 Matchs, 5 Résultats), ce qu’il y a à faire maintenant, et le bouton qui le fait. Si vous ne savez plus où vous en êtes, touchez simplement le gros bouton jaune.</div>
     <div class="facts"><div class="fact"><span>Avant</span><b>Créer le concours, l’annoncer</b></div><div class="fact"><span>Jusqu’au début</span><b>Inscriptions</b></div><div class="fact"><span>Le soir même</span><b>Pointage, tirage, matchs</b></div><div class="fact"><span>À la fin</span><b>Podium, lots, photo</b></div></div>
   </section>
 
   ${S('1. Les trois écrans', `
     <ul>
+      <li><b>Les onglets</b> : à gauche du trait, tout ce qui concerne le concours du moment — <b>Ce soir</b> (pointage, tirage, machines), <b>Équipes</b>, <b>Concours</b>, <b>Résultats</b>. À droite du trait, ce qui se règle de temps en temps : <b>Saison</b>, <b>Communication</b>, <b>Réglages</b>, <b>Aide</b>. Un point orange sur un onglet signale que c’est là que ça se passe.</li>
       <li><b>Espace staff</b> (cet écran) : pour tout gérer. On l’ouvre sur la tablette en scannant le <b>QR code staff</b>, ou sur l’ordinateur avec le <b>lien staff</b> (onglet Réglages), puis on se connecte avec l’<b>identifiant et le mot de passe</b> du staff. L’appareil reste ensuite connecté.</li>
       <li><b>Page joueurs</b> : ce que voient les clients sur leur téléphone. Ils s’y inscrivent, suivent le tableau et déclarent leurs résultats. Ils n’ont <b>aucun accès</b> à l’espace staff.</li>
       <li><b>Écran TV</b> : le tableau du tournoi en direct, à afficher sur la télé ou le projecteur. On n’y touche pas, il se met à jour tout seul.</li>
@@ -52,7 +54,7 @@ export function guideHTML() {
 
   ${S('5. Le soir du concours', `
     <ol>
-      <li><b>Pointage</b> (onglet <b>Jour J</b>) : touchez <b>Absente</b> pour passer l’équipe en <b>Présente</b> quand elle arrive. Seules les équipes présentes sont tirées au sort.</li>
+      <li><b>Pointage</b> (onglet <b>Ce soir</b>) : touchez <b>Pointer présente</b> quand l’équipe arrive ; le bouton devient vert <b>✓ Présente</b>. Seules les équipes présentes sont tirées au sort.</li>
       <li><b>Tirage au sort</b> : bouton <b>Lancer le tirage</b>, puis confirmez. Les inscriptions se ferment et le tableau apparaît partout (staff, téléphones, télé). Le bouton reste grisé si le tournoi risque de finir après la fermeture : réduisez le nombre d’équipes ou choisissez un jeu plus court.</li>
       <li><b>Les machines</b> : l’écran montre une case par machine DARTSLIVE.
         <ul><li>Une machine libre propose le prochain match : touchez <b>Lancer sur la machine 1</b> (ou 2) et lancez sur la machine le jeu indiqué. Les deux équipes sont appelées sur leur téléphone (si elles ont activé les notifications).</li>
@@ -63,7 +65,7 @@ export function guideHTML() {
         Le tableau avance tout seul et le match suivant se lance sur la machine libérée.</li>
       <li><b>Poules</b> : quand toutes les poules sont jouées, touchez <b>Générer le tableau final</b>.</li>
     </ol>
-    <p><b>Chrono</b> : en haut du Jour J, le temps restant avant la fermeture et l’heure de fin estimée. En rouge, il faut accélérer (finale ou consolante sur un jeu plus court, dans l’onglet Concours).</p>
+    <p><b>Chrono</b> : en haut de l’onglet Ce soir, le temps restant avant la fermeture et l’heure de fin estimée. En rouge, il faut accélérer (finale ou consolante sur un jeu plus court, dans l’onglet Concours).</p>
     <p><b>Erreur de résultat ?</b> Dans « Derniers résultats », touchez <b>Annuler</b> à côté du match, puis saisissez le bon gagnant. <b>Équipe pas prête ou machine en panne ?</b> Touchez <b>Remettre en attente</b> : le match repartira plus tard.</p>`)}
 
   ${S('6. L’écran TV (tableau des scores)', `
@@ -88,12 +90,12 @@ export function guideHTML() {
   ${S('8. Saison et record de la semaine', `
     <ul>
       <li><b>Classement de la saison</b> : participation 1 point, chaque victoire 1 point, 3e 3 points, 2e 5 points, 1re 8 points. Le barème se change dans Réglages.</li>
-      <li><b>Record de la semaine</b> (onglet Saison &amp; record) : un client fait un Count-Up ou un Big Bull seul sur la machine ; notez son prénom et le score affiché (photo de l’écran facultative). Le meilleur de la semaine gagne 2 points.</li>
+      <li><b>Record de la semaine</b> (onglet Saison) : un client fait un Count-Up ou un Big Bull seul sur la machine ; notez son prénom et le score affiché (photo de l’écran facultative). Le meilleur de la semaine gagne 2 points.</li>
     </ul>`)}
 
   ${S('9. Questions fréquentes', `
     <dl class="faq">
-      <dt>Un joueur a perdu son code d’équipe</dt><dd>Il est affiché à côté du nom de l’équipe dans Équipes ou Jour J. Donnez-le-lui.</dd>
+      <dt>Un joueur a perdu son code d’équipe</dt><dd>Il est affiché à côté du nom de l’équipe dans Équipes ou Ce soir. Donnez-le-lui.</dd>
       <dt>Un client n’a pas de téléphone</dt><dd>Inscrivez l’équipe au comptoir, sans numéro. Vous saisirez ses résultats vous-même.</dd>
       <dt>Une équipe arrive après le tirage</dt><dd>Elle ne peut plus entrer dans le tableau. Proposez-lui le record de la semaine ou le prochain concours.</dd>
       <dt>Une seule machine marche</dt><dd>Réglages, « Machines de fléchettes » : mettez 1. Les matchs passeront un par un et l’heure de fin se recalcule.</dd>

@@ -1,14 +1,18 @@
-// Espace staff : concours, équipes, jour J (pointage, tirage, file des machines, saisie en deux touches), résultats, communication.
+// Espace staff. Un bandeau « prochaine étape » en haut de chaque écran dit au staff quoi faire maintenant (voir flow.js),
+// puis les onglets : Ce soir (pointage, tirage, machines), Équipes, Concours, Résultats, et les réglages.
 import { sb, loadVenue, toEngine, matchRows } from './sb.js';
 import { SITE_URL, ASSETS_DIR, LOGO_PATH } from '../config.js';
 import * as E from './engine.js';
 import { guideHTML, GUIDE_CSS } from './guide.js';
-document.head.insertAdjacentHTML('beforeend', `<style>${GUIDE_CSS}</style>`);
+import { nextStep, stepTab, flowHTML, FLOW_CSS } from './flow.js';
+document.head.insertAdjacentHTML('beforeend', `<style>${GUIDE_CSS}${FLOW_CSS}</style>`);
 import { card, bracketHTML, poolsHTML, tname } from './views.js';
 import { $, esc, fmtDate, hhmm, hm, fmtHM, fmtDur, nowMin, today, addDays, weekMonday, LEVELS, STATUS, GAMES, PARTY, MENTION, pill, contestStatus, toast, slotChecks, notices, closedReason, hoursOf, copyText } from './util.js';
 
 const main = $('#main'), tabsEl = $('#tabs'), topbar = $('#topbar');
-const TABS = [['jourj', 'Jour J'], ['equipes', 'Équipes'], ['concours', 'Concours'], ['resultats', 'Résultats'], ['saison', 'Saison & record'], ['com', 'Communication'], ['reglages', 'Réglages'], ['aide', 'Mode d’emploi']];
+// Onglets : d'abord le concours en cours, puis (après le trait) ce qui se règle une fois pour toutes.
+const TABS = [['jourj', 'Ce soir'], ['equipes', 'Équipes'], ['concours', 'Concours'], ['resultats', 'Résultats'], ['sep'],
+  ['saison', 'Saison'], ['com', 'Communication'], ['reglages', 'Réglages'], ['aide', 'Aide']];
 let venue, settings, events = [], seasons = [], contests = [], cid = sessionStorage.getItem('vb-cid'), tab = sessionStorage.getItem('vb-tab') || 'jourj';
 let regs = [], c = null, editing = null, confirmKey = null, pick = null, busy = false;
 
@@ -130,12 +134,20 @@ function render() {
   }
   sessionStorage.setItem('vb-tab', tab); if (cid) sessionStorage.setItem('vb-cid', cid);
   tabsEl.classList.remove('hidden');
-  tabsEl.innerHTML = TABS.map(([k, l]) => `<button role="tab" data-tab="${k}" aria-selected="${tab === k}">${l}</button>`).join('');
-  const pickerHtml = contests.length ? `<div class="row" style="align-items:flex-end;margin-bottom:12px"><div class="field" style="flex:1;max-width:440px"><label for="cpick">Concours</label><select id="cpick">${contests.map((x) => `<option value="${x.id}"${x.id === cid ? ' selected' : ''}>${esc(fmtDate(x.date))} · ${hhmm(x.start_time)} · ${STATUS[x.status]}</option>`).join('')}</select></div><button class="btn sm" data-act="newContest">+ Nouveau concours</button></div>` : '';
+  const step = nextStep({ c, regs, contests, settings }), hot = stepTab(step);
+  tabsEl.innerHTML = TABS.map(([k, l]) => k === 'sep' ? '<span class="sep" aria-hidden="true"></span>'
+    : `<button role="tab" data-tab="${k}" aria-selected="${tab === k}">${l}${badge(k, hot)}</button>`).join('');
+  const pickerHtml = contests.length > 1 || (contests.length === 1 && tab === 'concours') ? `<div class="row" style="align-items:flex-end;margin-bottom:12px"><div class="field" style="flex:1;max-width:460px"><label for="cpick">Concours affiché</label><select id="cpick">${contests.map((x) => `<option value="${x.id}"${x.id === cid ? ' selected' : ''}>${x.date === today() ? 'Aujourd’hui · ' : ''}${esc(fmtDate(x.date))} · ${hhmm(x.start_time).replace(':', 'h')} · ${STATUS[x.status]}</option>`).join('')}</select></div><button class="btn sm" data-act="newContest">+ Nouveau concours</button></div>` : '';
   const views = { jourj: vJourJ, equipes: vEquipes, concours: vConcours, resultats: vResultats, saison: vSaison, com: vCom, reglages: vReglages, aide: guideHTML };
-  main.innerHTML = (['reglages', 'saison', 'aide'].includes(tab) ? '' : pickerHtml) + ((!c && !['concours', 'reglages', 'saison', 'aide'].includes(tab)) ? '<div class="empty">Aucun concours. Créez-en un dans l’onglet Concours.</div>' : views[tab]());
+  const flow = ['reglages', 'aide', 'saison'].includes(tab) ? '' : flowHTML(step);
+  main.innerHTML = flow + (['reglages', 'saison', 'aide'].includes(tab) ? '' : pickerHtml) + ((!c && !['concours', 'reglages', 'saison', 'aide'].includes(tab)) ? '' : views[tab]());
   if (tab === 'com') drawQR();
   if (tab === 'reglages') { loadAssets(); drawSettingsQR(); loadAccounts(); }
+}
+/** Pastille sur l'onglet : nombre d'équipes, ou point orange sur l'onglet où se trouve l'étape en cours */
+function badge(k, hot) {
+  if (k === 'equipes' && c) { const n = confirmed().length; return n ? `<span class="tbadge">${n}</span>` : ''; }
+  return k === hot && k !== tab ? '<span class="tdot" title="C’est ici que ça se passe"></span>' : '';
 }
 tabsEl.addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) { tab = b.dataset.tab; confirmKey = null; pick = null; render(); } });
 main.addEventListener('input', (e) => { if (KIOSK && e.target.closest('#teamForm')) stashDraft(); });
@@ -165,7 +177,7 @@ function vKiosk() {
   let left, right;
   if (c.status === 'brouillon' || c.status === 'ouvert') {
     const recent = regs.filter((r) => r.status !== 'annulee').slice(-6).reverse();
-    left = teamForm(true) + `<section class="panel"><h3>Dernières inscriptions</h3>${recent.length ? `<ul class="tlist">${recent.map((r, i) => teamLine(r, i, `<button class="btn ghost sm toggle" data-act="presence" data-id="${r.id}" aria-pressed="${r.present}"${r.status !== 'confirmee' ? ' disabled' : ''}>${r.status === 'attente' ? 'Attente' : r.present ? 'Présente' : 'Absente'}</button>`)).join('')}</ul>` : '<div class="empty">Les équipes inscrites ici apparaissent dans cette liste.</div>'}</section>`;
+    left = teamForm(true) + `<section class="panel"><h3>Dernières inscriptions</h3>${recent.length ? `<ul class="tlist">${recent.map((r, i) => teamLine(r, i, `<button class="btn ${r.present ? 'green' : 'ghost'} sm toggle" data-act="presence" data-id="${r.id}" aria-pressed="${r.present}"${r.status !== 'confirmee' ? ' disabled' : ''}>${r.status === 'attente' ? 'Liste d’attente' : r.present ? '✓ Présente' : 'Pointer présente'}</button>`)).join('')}</ul>` : '<div class="empty">Les équipes inscrites ici apparaissent dans cette liste.</div>'}</section>`;
   } else left = `<section class="panel"><h2>Inscriptions fermées</h2><p class="muted">Le tirage est fait.</p></section>${c.phase === 'pools' ? poolsHTML(c) : ''}${c.matches.some((m) => m.ph === 'main') ? `<section class="panel"><h3>Tableau</h3>${bracketHTML(c, 'main')}</section>` : ''}`;
   if (run) right = machineBlock();
   else if (c.status === 'termine') right = '<section class="panel"><h2>Concours terminé</h2><p>Podium, lots et légende dans l’espace staff, onglet Résultats.</p></section>';
@@ -186,16 +198,17 @@ if (KIOSK) {
   main.addEventListener('contextmenu', (e) => { if (e.target.closest('#kexit')) e.preventDefault(); });
 }
 
-/* ---------- Jour J ---------- */
+/* ---------- Ce soir : pointage, tirage, machines ---------- */
 function vJourJ() {
   const conf = confirmed();
   if (c.status === 'brouillon' || c.status === 'ouvert') {
     const nP = conf.filter((r) => r.present).length;
     const est = E.plan(c, Math.max(2, nP), settings);
     const chk = slotChecks(venue, events, c, Math.max(2, nP), est), blocked = chk.some((x) => x.lvl === 'bad');
-    return `<div class="stack"><section class="panel"><div class="row" style="justify-content:space-between"><h2>1 · Pointage</h2><span class="muted num">${nP} présentes sur ${conf.length}</span></div>
-      ${conf.length ? `<ul class="tlist">${conf.map((r, i) => teamLine(r, i, `<button class="btn ghost sm toggle" data-act="presence" data-id="${r.id}" aria-pressed="${r.present}">${r.present ? 'Présente' : 'Absente'}</button>`)).join('')}</ul>` : '<div class="empty">Aucune équipe confirmée.</div>'}</section>
-      <section class="panel"><h2>2 · Tirage au sort</h2><p>${c.format === 'poules' ? 'Poules de 3 ou 4 équipes, puis tableau final avec les 2 premiers de chaque poule.' : `Élimination directe ; les perdants du 1er tour jouent la consolante en ${esc(c.conso_game)}.`}</p>${notices(chk)}
+    return `<div class="stack"><section class="panel"><div class="row" style="justify-content:space-between"><h2>Pointer les arrivées</h2><span class="muted num">${nP} présentes sur ${conf.length}</span></div>
+      <p class="muted small" style="margin-top:0">Touchez <b>Pointer présente</b> quand une équipe se présente au comptoir. Seules les équipes présentes entrent dans le tirage ; les autres restent inscrites mais ne jouent pas.</p>
+      ${conf.length ? `<ul class="tlist">${conf.map((r, i) => teamLine(r, i, `<button class="btn ${r.present ? 'green' : 'ghost'} sm toggle" data-act="presence" data-id="${r.id}" aria-pressed="${r.present}">${r.present ? '✓ Présente' : 'Pointer présente'}</button>`)).join('')}</ul>` : '<div class="empty">Aucune équipe confirmée.</div>'}</section>
+      <section class="panel"><h2>Tirage au sort</h2><p>${c.format === 'poules' ? 'Poules de 3 ou 4 équipes, puis tableau final avec les 2 premiers de chaque poule.' : `Élimination directe ; les perdants du 1er tour jouent la consolante en ${esc(c.conso_game)}.`}</p>${notices(chk)}
       ${confirmKey === 'draw' ? `<div class="confirmRow"><span>Tirer au sort ${nP} équipes ? Les inscriptions seront fermées.</span><button class="btn red" data-act="draw">Confirmer le tirage</button><button class="btn ghost" data-act="cancel">Annuler</button></div>`
         : `<div class="row"><button class="btn red xl" data-act="ask" data-k="draw"${nP >= 2 && !blocked ? '' : ' disabled'}>Lancer le tirage</button>${blocked && nP >= 2 ? '<span class="muted small">Format trop long pour l’heure de fermeture : réduisez le nombre d’équipes ou choisissez un jeu plus court dans Concours.</span>' : ''}</div>`}</section></div>`;
   }
@@ -310,7 +323,7 @@ function vResultats() {
     ${nextK ? `<button class="btn red" data-act="drawConso"${pool.length ? '' : ' disabled'}>Tirer au sort : ${esc(nextK.label)}</button><p class="muted small">${pool.length} équipe(s) dans l’urne (hors podium et déjà récompensées).</p>` : ''}</section></div>`;
 }
 
-/* ---------- Saison & record ---------- */
+/* ---------- Saison : record de la semaine ---------- */
 function vSaison() {
   return `<div class="cols"><form class="panel" id="recForm"><h2>Record de la semaine</h2><p class="muted small">Semaine du ${esc(fmtDate(weekMonday()))}. Saisissez le score affiché par la machine.</p>
     <div class="grid3"><div class="field"><label for="rGame">Jeu</label><select id="rGame"><option>Count-Up</option><option>Big Bull</option></select></div><div class="field"><label for="rPlayer">Joueur</label><input id="rPlayer" required maxlength="30"></div><div class="field"><label for="rScore">Score</label><input id="rScore" type="number" inputmode="numeric" min="0" max="2000" required></div></div>
@@ -442,6 +455,8 @@ const A = {
     toast(promoted ? 'Équipe retirée : la première équipe en attente prend la place (prévenue sur son téléphone si elle a activé les notifications)' : 'Équipe retirée'); await reloadContest(); render();
   },
   pairSolos: async () => { const n = await rpcErr(sb.rpc('pair_solos', { p_contest: c.id })); toast(`${n} équipe(s) formée(s)`); await reloadContest(); render(); },
+  goTab: (t) => { tab = t.dataset.t; confirmKey = null; pick = null; render(); window.scrollTo(0, 0); },
+  openReg: async () => { const { error } = await sb.from('contests').update({ status: 'ouvert' }).eq('id', c.id); if (error) return toast(error.message); toast('Inscriptions ouvertes : les joueurs peuvent s’inscrire'); await reloadAll(); },
   newContest: () => { editing = blankContest(); tab = 'concours'; render(); },
   addConso: () => { const l = $('#consoList'); l.insertAdjacentHTML('beforeend', consoRow({ id: 'k' + Date.now(), label: '', rule: 'tirage' })); l.lastElementChild.querySelector('input').focus(); },
   rmConso: (t) => t.closest('.consoRow').remove(),

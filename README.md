@@ -6,7 +6,7 @@ Application web installable (PWA) pour les concours de fléchettes du bar, hébe
 - **Concours** : création, duplication à J+7, contrôle des horaires d'ouverture et des fermetures (bloqué par la base), alerte de conflit, estimation de l'heure de fin sur les deux machines.
 - **Inscriptions** : page joueurs par lien ou QR code, en moins d'une minute, avec le **numéro de téléphone** du capitaine (une inscription par numéro et par concours). Inscription sur place par le staff, liste d'attente automatique, annulation, joueurs solo associés par niveau.
 - **Notifications sur le téléphone** : « une place s'est libérée » pour les équipes en liste d'attente, « à vous de jouer sur la machine 2 » quand un match est lancé.
-- **Jour J** : pointage, tirage (élimination directe + consolante, ou poules puis tableau), deux machines DARTSLIVE 2, match suivant lancé automatiquement, **résultats déclarés par les joueurs** depuis leur téléphone ou saisis par le staff en deux touches.
+- **Ce soir (jour J)** : bandeau « prochaine étape » qui indique en permanence quoi faire, pointage, tirage (élimination directe + consolante, ou poules puis tableau), deux machines DARTSLIVE 2, match suivant lancé automatiquement, **résultats déclarés par les joueurs** depuis leur téléphone ou saisis par le staff en deux touches.
 - **Résultats, saison, record de la semaine, légendes Instagram, QR code**, onglet **Contact** synchronisé avec vandb.fr, écran TV.
 
 ## Les trois pages
@@ -88,7 +88,8 @@ web/                           le site publié (aucune donnée stockée sur GitH
 - Le dépôt peut être public : il ne contient aucun secret (la clé « anon » est publique par conception).
 
 ## Au bar
-- **Mode d'emploi** : onglet de l'espace staff qui explique simplement la création d'un concours, les inscriptions, le soir du concours, l'écran TV et les questions fréquentes.
+- **Prochaine étape** : un bandeau en haut de l'espace staff affiche l'étape en cours (Inscriptions, Pointage, Tirage, Matchs, Résultats), la consigne du moment et le bouton qui l'exécute (ouvrir les inscriptions, lancer le tirage, lancer le match sur la machine libre…). Les onglets sont séparés en deux groupes : le concours du moment à gauche, les réglages à droite.
+- **Aide** : onglet de l'espace staff qui explique simplement la création d'un concours, les inscriptions, le soir du concours, l'écran TV et les questions fréquentes.
 - **Aucun bouton vers l'espace staff** côté joueurs. Sur l'écran comptoir (tablette utilisée par les clients pour s'inscrire), le staff en sort par un appui de 3 secondes sur l'heure.
 - **Télévision** : `suivi.html` en plein écran, mise à jour automatique.
 - **Annonces TV** : à chaque résultat, annonce plein écran avec les noms des équipes (victoire en poule ou au premier tour, « Qualifiés ! » dans le tableau final, « Champions du V and B ! » pour la finale), le temps de la vidéo (10 s). Vidéos Flow à déposer dans Réglages › Fichiers du site (`annonce-victoire.mp4`, `annonce-qualifies.mp4`, `annonce-finale.mp4`) ; sans vidéo, le texte s'affiche seul sur fond noir. Aperçu : `suivi.html?demo=annonces`.
